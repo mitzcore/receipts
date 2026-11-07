@@ -1,0 +1,98 @@
+diff --git a/company/evidence/pentest-2025-04-summary.md b/company/evidence/pentest-2025-04-summary.md
+index 029019a..6d82b1f 100644
+--- a/company/evidence/pentest-2025-04-summary.md
++++ b/company/evidence/pentest-2025-04-summary.md
+@@ -6,6 +6,6 @@ Scope: public API, web app, admin console, AWS configuration review.
+ | ID | Finding | Severity | Status (as of 2025-06-30) |
+ |---|---|---|---|
+ | BR-01 | IDOR on /v1/exports/{id} lets a user fetch another tenant's export | High | Fixed 2025-05-02 |
+-| BR-02 | Admin console session doesn't expire on password change | High | **Open**: fix scheduled for Q3 2025 |
++| BR-02 | Admin console session doesn't expire on password change | High | **Open**: fix scheduled for Q3 2025. Update 2026-11-07: fixed in PR #1182, merged 2025-09-03; not verified by Bramble until the 2026-12-01 retest |
+ | BR-03 | Verbose stack traces on 500 errors | Medium | Fixed 2025-04-29 |
+ | BR-04 | Missing security headers (CSP) | Low | Accepted risk |
+diff --git a/company/idp/okta-policies.json b/company/idp/okta-policies.json
+index 46bca51..823ee51 100644
+--- a/company/idp/okta-policies.json
++++ b/company/idp/okta-policies.json
+@@ -1,5 +1,5 @@
+ {
+-  "exported_at": "2026-11-02T14:10:00Z",
++  "exported_at": "2026-11-07T14:55:00Z",
+   "org": "ledgerline.okta.com",
+   "groups": [
+     {"id": "00g1emp", "name": "Employees", "members": 37},
+@@ -18,17 +18,8 @@
+       "name": "Workforce MFA",
+       "priority": 1,
+       "status": "ACTIVE",
+-      "conditions": {"people": {"groups": {"include": ["Employees"]}}},
++      "conditions": {"people": {"groups": {"include": ["Employees", "Contractors"]}}},
+       "rule": {"factor_mode": "2FA", "factors": ["okta_verify_push", "webauthn"], "session_lifetime_minutes": 720}
+-    },
+-    {
+-      "name": "Contractor onboarding (temporary)",
+-      "priority": 2,
+-      "status": "ACTIVE",
+-      "created": "2026-04-18",
+-      "description": "Password-only while contractors' Okta Verify enrollment is sorted out. Remove after enrollment.",
+-      "conditions": {"people": {"groups": {"include": ["Contractors"]}}},
+-      "rule": {"factor_mode": "1FA", "factors": ["password"], "session_lifetime_minutes": 1440}
+     }
+   ],
+   "password_policy": {"min_length": 14, "history": 10, "max_age_days": 0, "lockout_attempts": 10, "breached_password_check": true}
+diff --git a/company/infra/terraform/rds.tf b/company/infra/terraform/rds.tf
+index 3808fe8..54a5086 100644
+--- a/company/infra/terraform/rds.tf
++++ b/company/infra/terraform/rds.tf
+@@ -14,7 +14,7 @@ resource "aws_db_instance" "ledger" {
+   # Automated snapshots run nightly in the backup window. PITR is enabled
+   # for the whole retention period.
+   backup_window           = "03:00-04:00"
+-  backup_retention_period = 7 # cut from 35 during the 2026-03 cost review (PLAT-412)
++  backup_retention_period = 14 # 2026-11 cost review again (PLAT-511)
+ 
+   deletion_protection     = true
+   copy_tags_to_snapshot   = true
+diff --git a/company/infra/terraform/s3.tf b/company/infra/terraform/s3.tf
+index 65e2bf5..d20e268 100644
+--- a/company/infra/terraform/s3.tf
++++ b/company/infra/terraform/s3.tf
+@@ -27,6 +27,16 @@ resource "aws_s3_bucket" "recon_exports" {
+   bucket = "ledgerline-recon-exports"
+ }
+ 
++resource "aws_s3_bucket_server_side_encryption_configuration" "recon_exports" {
++  bucket = aws_s3_bucket.recon_exports.id
++  rule {
++    apply_server_side_encryption_by_default {
++      sse_algorithm     = "aws:kms"
++      kms_master_key_id = aws_kms_key.data.arn
++    }
++  }
++}
++
+ resource "aws_s3_bucket_public_access_block" "recon_exports" {
+   bucket                  = aws_s3_bucket.recon_exports.id
+   block_public_acls       = true
+diff --git a/company/policies/incident-response.md b/company/policies/incident-response.md
+index b37b725..a179122 100644
+--- a/company/policies/incident-response.md
++++ b/company/policies/incident-response.md
+@@ -5,5 +5,8 @@ Version 1.6 · Owner: Head of Platform · Approved 2025-09-15
+ - Severity levels SEV1–SEV3 with an on-call incident commander.
+ - Customers affected by a confirmed security incident involving their data
+   are notified **within 72 hours** of confirmation.
++- Bank customers are notified **within 36 hours** of confirming a security
++  incident involving their data, and as soon as possible when an incident
++  disrupts their services for 4 hours or more (bank MSA).
+ - The plan is exercised with a tabletop at least once a year (see
+   `evidence/ir-tabletop-2026-02.md`).
+diff --git a/company/policies/vendor-management.md b/company/policies/vendor-management.md
+index 8255fe7..e674dd3 100644
+--- a/company/policies/vendor-management.md
++++ b/company/policies/vendor-management.md
+@@ -12,3 +12,4 @@ signed DPA **before** any customer data is sent to them.
+ | Amazon Web Services | Hosting, storage | US (us-east-1) |
+ | Sentry | Error monitoring (scrubbed of PII) | US |
+ | Postmark | Transactional email | US |
++| Anthropic | LLM API: drafts exception memos for unmatched transactions | US |

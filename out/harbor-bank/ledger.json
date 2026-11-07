@@ -1,0 +1,1447 @@
+{
+  "deal": "harbor-bank",
+  "customer": "Harbor Bank",
+  "source": "inbox/harbor-bank-vendor-security-questionnaire.csv",
+  "started": "2026-11-07T09:28:04-05:00",
+  "questions": [
+    {
+      "id": "HB-01",
+      "section": "Governance",
+      "question": "Do you maintain a written information security policy, approved by management and reviewed at least annually?",
+      "status": "exception",
+      "answer": "We maintain a written Information Security Policy (version 3.2), owned by the Head of Platform and approved on 2025-09-15, with an annual review cycle. The 2026 review is overdue. The review and re-approval by our CEO is scheduled for 2026-11-20.",
+      "evidence": [
+        "company/policies/information-security-policy.md:1-3",
+        "human:@dev in ~infra at 2026-11-07T09:37"
+      ],
+      "owner": "dev",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:42-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "ISP v3.2 last approved 2025-09-15 (information-security-policy.md:3), review cycle annual; as of 2026-11-07 the 2026 review looks overdue. Need: was it re-reviewed/approved in 2026 (date, approver)? If not, remediation date."
+        },
+        {
+          "at": "2026-11-07T09:37:04-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "exception",
+          "note": "Dev chose disclose: 2026 review slipped. Remediation: review + CEO re-approval by 2026-11-20, owner Dev."
+        },
+        {
+          "at": "2026-11-07T09:37:32-05:00",
+          "by": "auditor",
+          "from": "exception",
+          "to": "exception",
+          "note": "Policy v3.2 states annual review and shows last approval 2025-09-15; as of 2026-11-07 the 2026 annual review is overdue. Exception accurately discloses status. CEO re-approval date 2026-11-20 is Dev-reported; no separate schedule record in company/."
+        }
+      ]
+    },
+    {
+      "id": "HB-02",
+      "section": "Access control",
+      "question": "Is single sign-on enforced for all workforce access to production systems?",
+      "status": "verified",
+      "answer": "Yes. All workforce access to production goes through Okta SSO; there are no local logins on production systems. Production AWS access is granted through AWS IAM Identity Center federated to Okta, with admin roles assigned to the Engineering group only. GitHub Enterprise and the Ledgerline Admin Console are also Okta-assigned applications.",
+      "evidence": [
+        "company/idp/okta-policies.json:9-13",
+        "company/idp/okta-policies.json:2",
+        "company/policies/access-control.md:5-6",
+        "human:@dev in ~infra at 2026-11-07T10:00"
+      ],
+      "owner": "dev",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:22-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-11-07T09:32:55-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked Okta app assignments and access policy: workforce production access is routed through Okta SSO; no contradiction to SSO claim."
+        },
+        {
+          "at": "2026-11-07T09:57:51-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Okta export reformatted after export; same app assignments, citation re-pointed from 10-13."
+        },
+        {
+          "at": "2026-11-07T09:59:03-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "contested",
+          "note": "The only evidence for the specific AWS, GitHub, and Admin Console assignments is an Okta export dated 2026-11-12, after today; the current assignment state is not established. The general SSO policy does not establish these app assignments."
+        },
+        {
+          "at": "2026-11-07T10:00:16-05:00",
+          "by": "clerk",
+          "from": "contested",
+          "to": "needs_owner",
+          "note": "Auditor: okta-policies.json is dated 2026-11-12 (line 2), after today, so it can't be the current export. Assignments are the same as the 2026-11-02 export, but that file has been replaced. Need Dev: a correctly dated export or his confirmation that the app assignments are current."
+        },
+        {
+          "at": "2026-11-07T10:03:14-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Dev 10:00: everything goes through Okta, no local login on anything in prod. Okta export now dated 2026-11-07T14:55Z (line 2), i.e. today 09:55 EST. App assignments at lines 9-13. No IAM users or login profiles in Terraform; the only DB credential is the app secret in Secrets Manager (secrets.tf:1-10)."
+        },
+        {
+          "at": "2026-11-07T10:04:18-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Current Okta export lists production AWS IAM Identity Center, GitHub Enterprise and Admin Console as Okta-assigned applications; access-control policy requires Okta SSO for every workforce account. Dev, the SSO owner, confirms no production local logins. No company/ contradiction found."
+        }
+      ]
+    },
+    {
+      "id": "HB-03",
+      "section": "Access control",
+      "question": "Is multi-factor authentication enforced for ALL workforce accounts (employees and contractors) that can access production systems or customer data?",
+      "status": "verified",
+      "answer": "Yes. MFA (Okta Verify push or WebAuthn) is enforced for every workforce account, employees and contractors, through a single Okta sign-on policy, and there is no password-only rule. Until 2026-11-07, six contractor accounts with read-only production AWS access and GitHub access signed in with a password only, under a temporary onboarding rule in place since 2026-04-18. That rule was removed and those accounts were moved onto the MFA policy on 2026-11-07.",
+      "evidence": [
+        "company/idp/okta-policies.json:16-23",
+        "company/idp/okta-policies.json:4-8",
+        "company/idp/okta-policies.json:9-13",
+        "company/idp/okta-policies.json:2",
+        "company/policies/access-control.md:7-9",
+        "human:@dev in ~infra at 2026-11-07T09:32",
+        "human:@dev in ~infra at 2026-11-07T10:00"
+      ],
+      "owner": "dev",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:42-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "CONTRADICTION. Policy access-control.md:7-9 says MFA for every workforce account. okta-policies.json:24-32: ACTIVE 'Contractor onboarding (temporary)' rule, password-only (1FA) since 2026-04-18, Contractors (6) who have prod read-only AWS + GitHub (okta-policies.json:10,12). Last year's 'Yes' is false today. Need: fix now or disclose with remediation date."
+        },
+        {
+          "at": "2026-11-07T09:34:35-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "exception",
+          "note": "Dev chose disclose (won't change Okta from chat). Remediation: enforce Okta Verify for Contractors group, owner Dev, by 2026-11-14."
+        },
+        {
+          "at": "2026-11-07T09:36:02-05:00",
+          "by": "auditor",
+          "from": "exception",
+          "to": "exception",
+          "note": "Okta export confirms six contractor accounts have an ACTIVE password-only 1FA rule and production read-only/GitHub access; exception truth is supported."
+        },
+        {
+          "at": "2026-11-07T09:57:51-05:00",
+          "by": "clerk",
+          "from": "exception",
+          "to": "needs_owner",
+          "note": "okta-policies.json changed after export: contractor password-only rule gone, Contractors added to Workforce MFA (lines 56-79). But exported_at is 2026-11-12T09:00Z, five days after today (2026-11-07). Need Dev: is contractor MFA enforced now, and what is the real export date?"
+        },
+        {
+          "at": "2026-11-07T10:00:16-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "needs_owner",
+          "note": "okta-policies.json rewritten twice after export (09:56, 09:58). Now the contractor rule is gone and Contractors are in Workforce MFA (lines 16-23), but exported_at (line 2) is 2026-11-12, after today. Need Dev: is MFA enforced for all 6 contractors right now, and what is the real export date?"
+        },
+        {
+          "at": "2026-11-07T10:03:14-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Was exception (contractors password-only, fix by 11-14). Fixed early: Dev 10:00 says contractors moved onto Workforce MFA today, temporary rule deleted, MFA enforced for every workforce account. Okta export 2026-11-07T14:55Z (line 2) shows one sign-on policy, Workforce MFA 2FA, including Employees and Contractors (lines 16-23). The 2026-04-18 start date of the old rule is from the 11-02 export and Dev 09:32."
+        },
+        {
+          "at": "2026-11-07T10:04:18-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Current Okta export dated 2026-11-07 includes Employees and Contractors in the sole ACTIVE Workforce MFA policy with factor_mode = 2FA; no password-only rule remains. Owner-confirmed six contractor accounts moved to MFA today; prior password-only period is disclosed and supported by the earlier export and owner receipts. No contradiction found."
+        }
+      ]
+    },
+    {
+      "id": "HB-04",
+      "section": "Access control",
+      "question": "Describe your password requirements for workforce accounts.",
+      "status": "verified",
+      "answer": "Workforce passwords are governed by the Okta password policy: minimum 14 characters, the last 10 passwords cannot be reused, new passwords are checked against known-breached password lists, and accounts lock after 10 failed sign-in attempts. Passwords do not expire on a fixed schedule.",
+      "evidence": [
+        "company/idp/okta-policies.json:25",
+        "company/idp/okta-policies.json:2",
+        "company/policies/access-control.md:10"
+      ],
+      "owner": "dev",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:22-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-11-07T09:32:55-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked the current Okta password_policy values and access-control policy; all stated length, history, breached-password, lockout, and no-expiration settings match."
+        },
+        {
+          "at": "2026-11-07T09:57:51-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Okta export reformatted; password policy unchanged, citation re-pointed from 34."
+        },
+        {
+          "at": "2026-11-07T09:59:03-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "contested",
+          "note": "The export is dated 2026-11-12, after today, so it cannot establish current password-history, lockout, breached-password, and no-expiry settings. Only minimum length and breached-password checking are also in the policy."
+        },
+        {
+          "at": "2026-11-07T10:00:16-05:00",
+          "by": "clerk",
+          "from": "contested",
+          "to": "needs_owner",
+          "note": "Same future-dated Okta export (line 2: 2026-11-12). Password policy is at line 25. access-control.md:10 covers only the 14-char minimum and the breached-password check. Need Dev: confirm history 10, lockout 10, no expiry are current, or give a correctly dated export."
+        },
+        {
+          "at": "2026-11-07T10:03:14-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Dev 10:00: go with what the systems show. Okta export now dated 2026-11-07T14:55Z (line 2), not the future date that got it contested. password_policy at line 25 matches; it agrees with access-control.md:10 (14-char minimum, breached check), nothing in the policy contradicts it."
+        },
+        {
+          "at": "2026-11-07T10:04:18-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Current Okta password_policy says min_length 14, history 10, max_age_days 0, lockout_attempts 10, breached_password_check true; access-control.md:10 confirms 14-character minimum and breached-password checks. max_age_days = 0 supports no fixed expiry. No contradiction found."
+        }
+      ]
+    },
+    {
+      "id": "HB-05",
+      "section": "Access control",
+      "question": "Are user access rights to production reviewed at least quarterly? When was the last review?",
+      "status": "verified",
+      "answer": "Yes. Production access rights are reviewed quarterly in Okta. The most recent review was completed on 2026-10-06; the next is scheduled for January 2027.",
+      "evidence": [
+        "company/policies/access-control.md:13",
+        "human:@dev in ~infra at 2026-11-07T09:32"
+      ],
+      "owner": "dev",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:42-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "Policy says quarterly (access-control.md:13); no review records in company/. Need: date of last prod access review, and whether each of the last 4 quarters had one."
+        },
+        {
+          "at": "2026-11-07T09:34:35-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Dev: quarterly, done in Okta, last review 2026-10-06 (SEC-88), next January. No review records in company/; rests on Dev."
+        },
+        {
+          "at": "2026-11-07T09:36:01-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "contested",
+          "note": "Missing evidence: policy requires quarterly reviews but no review record substantiates the 2026-10-06 date or four-quarter cadence."
+        },
+        {
+          "at": "2026-11-07T09:41:43-05:00",
+          "by": "auditor",
+          "from": "contested",
+          "to": "verified",
+          "note": "owner-confirmed; Dev owns access reviews. He confirms quarterly reviews in Okta, last completed 2026-10-06 (SEC-88), next in January; company/policies/access-control.md:13 agrees with the quarterly cadence and nothing in company/ contradicts the date."
+        }
+      ]
+    },
+    {
+      "id": "HB-06",
+      "section": "Encryption",
+      "question": "Is all customer data encrypted at rest? Specify the algorithm and how keys are managed.",
+      "status": "verified",
+      "answer": "Yes. Customer data at rest is encrypted with AES-256. The production PostgreSQL database (Amazon RDS) and the S3 buckets holding customer statement files and reconciliation exports are encrypted with a customer-managed AWS KMS key that rotates automatically every year. Reconciliation export files created before 2026-11-07 remain encrypted with AES-256 under S3-managed keys until they expire, no later than 2026-12-07.",
+      "evidence": [
+        "company/infra/terraform/rds.tf:7-8",
+        "company/infra/terraform/s3.tf:6-13",
+        "company/infra/terraform/s3.tf:30-38",
+        "company/infra/terraform/s3.tf:53",
+        "company/infra/terraform/kms.tf:1-5",
+        "human:@dev in ~infra at 2026-11-07T09:35"
+      ],
+      "owner": "dev",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:42-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "CONTRADICTION. RDS (rds.tf:7-8), statements bucket (s3.tf:6-13), audit logs (logging.tf:25-33) use the KMS CMK. recon_exports bucket (s3.tf:26-28, added 2026-05, customer transaction reports) has no SSE configuration, so it is on S3-managed default keys, not the CMK. Policy information-security-policy.md:10-11 says every bucket. Need: fix now (add SSE-KMS block) or disclose."
+        },
+        {
+          "at": "2026-11-07T09:36:32-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Fixed: SSE-KMS block added to recon_exports (s3.tf:30-38), diff approved by Dev in ~infra 09:35. Existing objects stay SSE-S3 until 30-day expiry (s3.tf:53)."
+        },
+        {
+          "at": "2026-11-07T09:37:12-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked all production customer-data stores: RDS uses storage_encrypted = true and aws_kms_key.data; both customer S3 buckets have aws:kms SSE on that key. Existing export objects remain under prior encryption until the enabled 30-day lifecycle expiration, hence at most 30 days after 2026-11-07. No other customer-data bucket or database resource found."
+        }
+      ]
+    },
+    {
+      "id": "HB-07",
+      "section": "Encryption",
+      "question": "Is customer data encrypted in transit using TLS 1.2 or higher?",
+      "status": "verified",
+      "answer": "Yes, for customer traffic over public networks. The public API load balancer serves HTTPS using AWS security policy ELBSecurityPolicy-TLS13-1-2-2021-06 (TLS 1.2 minimum, TLS 1.3 preferred). Plain HTTP requests on port 80 are redirected to HTTPS with a 301.",
+      "evidence": [
+        "company/infra/terraform/network.tf:27-31",
+        "company/infra/terraform/network.tf:39-50",
+        "company/policies/information-security-policy.md:13-14"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T09:31:22-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "Scoped to public networks: internal hops (ALB to app, app to RDS) aren't provable from company/."
+        },
+        {
+          "at": "2026-11-07T09:32:55-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked HTTPS listener, TLS policy and HTTP redirect; configured minimum is TLS 1.2 as stated."
+        }
+      ]
+    },
+    {
+      "id": "HB-08",
+      "section": "Encryption",
+      "question": "Are encryption keys rotated automatically?",
+      "status": "verified",
+      "answer": "Yes. The customer-managed AWS KMS key (alias/ledgerline-data) used for the production database, the customer statements bucket, the audit log bucket and Secrets Manager has automatic key rotation enabled; AWS KMS rotates the key material annually. The production database credential is rotated automatically every 30 days.",
+      "evidence": [
+        "company/infra/terraform/kms.tf:1-3",
+        "company/infra/terraform/kms.tf:7-9",
+        "company/policies/information-security-policy.md:12",
+        "company/infra/terraform/secrets.tf:6-9"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T09:31:22-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-11-07T09:32:55-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked KMS key rotation plus encryption configuration for RDS, statements and audit logs and the Secrets Manager secrets; named resources match the answer."
+        }
+      ]
+    },
+    {
+      "id": "HB-09",
+      "section": "Network",
+      "question": "Are databases holding customer data isolated from the public internet?",
+      "status": "verified",
+      "answer": "Yes. The production PostgreSQL database (Amazon RDS) is not publicly accessible and runs in private subnets. Its security group accepts connections on port 5432 only from the application tier's security group.",
+      "evidence": [
+        "company/infra/terraform/rds.tf:10-12",
+        "company/infra/terraform/rds.tf:23-25",
+        "company/infra/terraform/network.tf:53-61",
+        "company/policies/information-security-policy.md:17-19"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T09:31:22-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-11-07T09:32:55-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked RDS public accessibility, private subnet group and DB security group ingress; database is private and accepts 5432 only from app tier."
+        }
+      ]
+    },
+    {
+      "id": "HB-10",
+      "section": "Secrets",
+      "question": "How are application secrets and credentials stored and rotated?",
+      "status": "verified",
+      "answer": "Application secrets and credentials are stored in AWS Secrets Manager, encrypted with Ledgerline's customer-managed AWS KMS key. The production database credential is rotated automatically every 30 days by a Secrets Manager rotation function. Third-party API keys held in Secrets Manager do not have automatic rotation configured.",
+      "evidence": [
+        "company/infra/terraform/secrets.tf:1-4",
+        "company/infra/terraform/secrets.tf:6-10",
+        "company/infra/terraform/secrets.tf:12-15",
+        "company/policies/information-security-policy.md:22"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T09:31:22-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-11-07T09:32:55-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked Secrets Manager resources and rotation config; database rotates every 30 days, LLM key is stored there, and answer explicitly says third-party keys do not auto-rotate."
+        }
+      ]
+    },
+    {
+      "id": "HB-11",
+      "section": "Resilience",
+      "question": "Are production databases backed up at least daily, with backups retained for at least 30 days?",
+      "status": "exception",
+      "answer": "No. The production database is backed up automatically every night, with point-in-time recovery, but backups are currently retained for 14 days, not 30. Retention was 7 days from March 2026 until 2026-11-07, so the full 14-day history is available from 2026-11-14. Our backup policy requires 35 days, and we plan to restore 35-day retention at our December 2026 review.",
+      "evidence": [
+        "company/infra/terraform/rds.tf:14-17",
+        "company/policies/backup-and-recovery.md:5-7",
+        "human:@dev in ~infra at 2026-11-07T09:35",
+        "human:@dev in ~infra at 2026-11-07T10:00"
+      ],
+      "owner": "dev",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:42-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "CONTRADICTION. Nightly backups yes (rds.tf:16). Retention 7 days (rds.tf:17, cut from 35 in PLAT-412, 2026-03). Policy backup-and-recovery.md:7 and last year's answer say 35. Answer to '>=30 days' is No today. Need: fix now (7 -> 35) or disclose with date."
+        },
+        {
+          "at": "2026-11-07T09:36:32-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Fixed: rds.tf:17 backup_retention_period 7 -> 35, diff approved by Dev in ~infra 09:35. Window refills over 28 days."
+        },
+        {
+          "at": "2026-11-07T09:37:13-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Terraform now sets backup_retention_period = 35; nightly backups and PITR are configured. The prior 7-day window was restored on 2026-11-07, so an additional 28 days are needed to accumulate the full 35-day window (2026-12-05)."
+        },
+        {
+          "at": "2026-11-07T09:57:51-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "needs_owner",
+          "note": "System changed after export: rds.tf:17 now backup_retention_period = 14 ('2026-11 cost review again (PLAT-511)'), overwriting the 35-day change Dev approved today. 14 < 30, so the answer as written is false. Need Dev: is 14 what's applied, or should it be 35?"
+        },
+        {
+          "at": "2026-11-07T10:03:24-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "exception",
+          "note": "Dev 10:00: finance cut retention to 14 days in this week's cost review (PLAT-511); disclose 14; he takes it back to 35 at the December review; do not revert rds.tf:17. Remediation: restore 35-day retention, owner Dev, December 2026 review (no exact date given). History: 7 days since 2026-03 (PLAT-412, Dev 09:35), so 14-day window fills by 2026-11-14."
+        },
+        {
+          "at": "2026-11-07T10:04:18-05:00",
+          "by": "auditor",
+          "from": "exception",
+          "to": "exception",
+          "note": "Owner-confirmed 14-day retention at the current December review plan; rds.tf:17 says backup_retention_period = 14, with nightly backups and PITR at :14-16. Seven prior days until 2026-11-07 means full 14-day window on 2026-11-14. The disclosed exception matches the current system and Dev’s remediation statement."
+        }
+      ]
+    },
+    {
+      "id": "HB-12",
+      "section": "Resilience",
+      "question": "State your RPO and RTO for the core platform, and when a restore was last tested.",
+      "status": "verified",
+      "answer": "For the production ledger database: RPO 1 hour, RTO 4 hours. Point-in-time recovery is enabled for the full backup retention period. The most recent restore test was on 2026-09-12: the production database was restored from its nightly snapshot into a separate instance, and the restore plus integrity checks took 1 h 52 min with matching checksums.",
+      "evidence": [
+        "company/policies/backup-and-recovery.md:9",
+        "company/infra/terraform/rds.tf:14-16",
+        "company/evidence/restore-test-2026-Q3.md:3-4"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T09:31:22-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-11-07T09:32:55-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked recovery policy, RDS backup configuration and dated restore evidence; RPO/RTO and test result match, and PITR covers configured retention period (7 days)."
+        }
+      ]
+    },
+    {
+      "id": "HB-13",
+      "section": "Logging",
+      "question": "Are security audit logs retained for at least 12 months?",
+      "status": "exception",
+      "answer": "No. CloudTrail security audit logs are retained for 90 days in CloudWatch Logs and for 180 days in an encrypted S3 archive with log file validation. We are extending S3 retention of audit logs to 400 days by 2026-12-31.",
+      "evidence": [
+        "company/infra/terraform/logging.tf:13",
+        "company/infra/terraform/logging.tf:44",
+        "company/infra/terraform/logging.tf:4-6",
+        "human:@dev in ~infra at 2026-11-07T09:32"
+      ],
+      "owner": "dev",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:43-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "CONTRADICTION. CloudTrail in CloudWatch 90 days (logging.tf:13); S3 archive expires at 180 days (logging.tf:44). Policy information-security-policy.md:27 and last year's '13 months' say >=12 months. Need: fix now (S3 expiration 180 -> 400) or disclose with date."
+        },
+        {
+          "at": "2026-11-07T09:34:35-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "exception",
+          "note": "Dev chose disclose. Remediation: S3 audit-log expiration 180 -> 400 days, owner Dev, by 2026-12-31."
+        },
+        {
+          "at": "2026-11-07T09:36:02-05:00",
+          "by": "auditor",
+          "from": "exception",
+          "to": "exception",
+          "note": "Terraform confirms 90-day CloudWatch and 180-day S3 audit log retention; disclosed exception is supported."
+        }
+      ]
+    },
+    {
+      "id": "HB-14",
+      "section": "Logging",
+      "question": "Is CloudTrail (or equivalent) enabled in all regions, with tamper detection on log files?",
+      "status": "verified",
+      "answer": "Yes, in the production AWS account. CloudTrail runs as a multi-region trail that includes global service events, with log file integrity validation enabled to detect tampering. Logs are delivered to a dedicated S3 bucket encrypted with a customer-managed KMS key, and to CloudWatch Logs.",
+      "evidence": [
+        "company/infra/terraform/logging.tf:1-8",
+        "company/infra/terraform/logging.tf:25-33"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T09:31:23-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-11-07T09:32:55-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked CloudTrail Terraform: multi-region, global service events, integrity validation, S3 and CloudWatch delivery match."
+        }
+      ]
+    },
+    {
+      "id": "HB-15",
+      "section": "Vulnerability management",
+      "question": "Are application dependencies scanned automatically for known vulnerabilities at least weekly?",
+      "status": "exception",
+      "answer": "No. Automated dependency vulnerability scanning has not run since June 2026, when our previous scanner was removed from CI. We are enabling GitHub Dependabot by 2026-11-13.",
+      "evidence": [
+        "company/.github/workflows/ci.yml:23-30",
+        "human:@dev in ~infra at 2026-11-07T09:32"
+      ],
+      "owner": "dev",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:43-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "CONTRADICTION. Snyk job commented out since 2026-06 (ci.yml:23-30, PLAT-455); no other dependency scanner in CI, no schedule trigger. Policy information-security-policy.md:30-31 says every PR + weekly. Need: fix now (add scanner job + weekly schedule) or disclose with date."
+        },
+        {
+          "at": "2026-11-07T09:34:35-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "exception",
+          "note": "Dev chose disclose. Snyk license lapsed 2026-06 (PLAT-455). Remediation: Dependabot on, owner Dev, by 2026-11-13. Dev did not commit to a weekly schedule, so the answer doesn't claim one."
+        },
+        {
+          "at": "2026-11-07T09:36:02-05:00",
+          "by": "auditor",
+          "from": "exception",
+          "to": "exception",
+          "note": "CI confirms dependency scan is commented out and no replacement runs; disclosed exception is supported."
+        }
+      ]
+    },
+    {
+      "id": "HB-16",
+      "section": "Vulnerability management",
+      "question": "When was your most recent independent penetration test, and have all critical and high findings been remediated?",
+      "status": "verified",
+      "answer": "Our most recent independent penetration test was performed by Bramble Security (CREST-accredited) from 2025-04-07 to 2025-04-18, covering the public API, web app, admin console and AWS configuration. It had no Critical findings and two High findings. BR-01 was fixed on 2025-05-02. BR-02 was fixed on 2025-09-03, but Bramble has not yet retested that fix; it will be verified in our next test with Bramble Security, booked for 2026-12-01. No penetration test has been performed since April 2025.",
+      "evidence": [
+        "company/evidence/pentest-2025-04-summary.md:3-4",
+        "company/evidence/pentest-2025-04-summary.md:8-11",
+        "human:@dev in ~infra at 2026-11-07T09:32",
+        "human:@dev in ~infra at 2026-11-07T09:37",
+        "human:@dev in ~infra at 2026-11-07T09:53"
+      ],
+      "owner": "dev",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:43-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "Only report in company/ is Bramble Security, 2025-04-07..18 (pentest-2025-04-summary.md:3). BR-02 High 'Open' as of 2025-06-30 (line 9). Last year's 'all highs remediated' isn't supported, and the test is >12 months old vs annual policy (information-security-policy.md:32-33). Need: any test since Apr 2025 (date, tester)? BR-02 fix date? If no 2026 test, next scheduled date."
+        },
+        {
+          "at": "2026-11-07T09:34:35-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "exception",
+          "note": "Dev chose disclose. Annual test overdue vs information-security-policy.md:32-33. BR-02 fix date 2025-09-03 is from Dev (report says Open as of 2025-06-30); also outside the 30-day policy window. Remediation: Bramble booked 2026-12-01."
+        },
+        {
+          "at": "2026-11-07T09:36:02-05:00",
+          "by": "auditor",
+          "from": "exception",
+          "to": "contested",
+          "note": "Contradicted by latest evidence: BR-02 High is marked Open as of 2025-06-30; no evidence supports the claimed 2025-09-03 remediation."
+        },
+        {
+          "at": "2026-11-07T09:41:43-05:00",
+          "by": "auditor",
+          "from": "contested",
+          "to": "verified",
+          "note": "owner-confirmed; Dev owns penetration testing. The report supports tester, dates, scope and findings; its BR-02 status is as of 2025-06-30 and does not contradict Dev's 2025-09-03 fix confirmation or 2026-12-01 booking."
+        },
+        {
+          "at": "2026-11-07T09:52:54-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Corrected before sign-off. The verified text said BR-02 was 'remediated' with no caveat, but Dev at 09:37 said: 'fixed in PR #1182, merged 2025-09-03, but Bramble never retested it ... say it isn't verified by the tester until the Dec 1 retest.' Line 9 still says Open (as of 2025-06-30), so its citation was dropped. Line-9 update diff proposed to Dev in ~infra."
+        },
+        {
+          "at": "2026-11-07T09:53:46-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Dev owns penetration testing. The report supports Bramble's CREST status, test dates/scope, and BR-01; its BR-02 status is explicitly as of 2025-06-30. Dev's 09:32 and 09:37 receipts confirm PR #1182 merged 2025-09-03, not retested by Bramble, and scheduled for verification in the 2026-12-01 test. Current answer states this accurately."
+        },
+        {
+          "at": "2026-11-07T09:54:37-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Answer text unchanged. Dev approved the line-9 update in ~infra at 09:53 and it was applied after the 09:53:46 verification, so the cited range 8-11 changed under a verified answer. Line 9 now records PR #1182 (merged 2025-09-03) and that Bramble has not verified it until the 2026-12-01 retest, matching the answer. Re-audit needed before re-export; the 09:52 export still carries the old 'both remediated' text."
+        },
+        {
+          "at": "2026-11-07T09:55:42-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Rechecked updated report lines 8-11 and Dev's 09:37/09:53 receipts: BR-02 fixed in PR #1182 on 2025-09-03, not yet verified by Bramble, retest booked 2026-12-01; no contradiction."
+        }
+      ]
+    },
+    {
+      "id": "HB-17",
+      "section": "SDLC",
+      "question": "Are all code changes peer-reviewed before they reach production?",
+      "status": "verified",
+      "answer": "Yes. Every change to main requires a pull request with an approving review from a code owner, and direct pushes to main are blocked. CI runs tests and lint on every pull request. Production deploys run only from main and require approval from a second engineer through GitHub's protected production environment.",
+      "evidence": [
+        "company/.github/CODEOWNERS:1-4",
+        "company/policies/secure-sdlc.md:3-7",
+        "company/.github/workflows/ci.yml:2-5",
+        "company/.github/workflows/ci.yml:32-36"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T09:31:23-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "Branch protection settings themselves aren't exported to company/; enforcement rests on CODEOWNERS and the SDLC policy."
+        },
+        {
+          "at": "2026-11-07T09:32:56-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked CODEOWNERS, secure SDLC policy and active CI workflow; review, tests/lint and second-engineer production approval match. Dependency scanning is not claimed."
+        }
+      ]
+    },
+    {
+      "id": "HB-18",
+      "section": "SDLC",
+      "question": "Are production, staging and development environments separated?",
+      "status": "verified",
+      "answer": "Yes. Production, staging and development run in separate AWS accounts. Production infrastructure is defined in Terraform with its own state.",
+      "evidence": [
+        "company/policies/secure-sdlc.md:8",
+        "company/infra/terraform/providers.tf:6-10"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T09:31:23-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-11-07T09:32:56-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked secure SDLC policy, which states production, staging and development are separate AWS accounts, and production Terraform provider/state config; claim matches evidence."
+        }
+      ]
+    },
+    {
+      "id": "HB-19",
+      "section": "Incident response",
+      "question": "Do you have a documented incident response plan that is tested at least annually?",
+      "status": "verified",
+      "answer": "Yes. Ledgerline maintains a documented incident response plan with SEV1-SEV3 severity levels and an on-call incident commander. The plan is exercised with a tabletop at least once a year. The most recent was on 2026-02-19 (leaked AWS access key scenario, simulated containment in 38 minutes); both follow-up actions were completed by 2026-03-10.",
+      "evidence": [
+        "company/policies/incident-response.md:3-5",
+        "company/policies/incident-response.md:11-12",
+        "company/evidence/ir-tabletop-2026-02.md:1-5"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T09:31:23-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-11-07T09:32:56-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked incident response policy and 2026-02 tabletop evidence; annual exercise, date, scenario, containment time and completed follow-ups match."
+        },
+        {
+          "at": "2026-11-07T09:46:24-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Receipt re-pointed only: the HB-20 insert at incident-response.md:8-10 moved the tabletop line from 8-9 to 11-12. Answer text unchanged."
+        },
+        {
+          "at": "2026-11-07T09:46:51-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Plan defines SEV1-SEV3 and on-call incident commander and requires annual tabletop; 2026-02-19 evidence records scenario, 38-minute simulated containment, and both follow-up actions completed 2026-03-10."
+        },
+        {
+          "at": "2026-11-07T09:46:55-05:00",
+          "by": "auditor",
+          "from": "verified",
+          "to": "verified",
+          "note": "Checked current IR plan and tabletop evidence: plan defines SEV1-SEV3/on-call incident commander and annual tabletop; 2026-02-19 scenario, 38-minute simulated containment and both follow-ups completed 2026-03-10 match the evidence."
+        }
+      ]
+    },
+    {
+      "id": "HB-20",
+      "section": "Incident response",
+      "question": "Within what timeframe will you notify Harbor Bank of a security incident affecting our data or services?",
+      "status": "verified",
+      "answer": "We notify Harbor Bank within 36 hours of confirming a security incident affecting Harbor Bank data. If an incident disrupts the services we provide to Harbor Bank for 4 hours or more, we notify Harbor Bank as soon as possible, in line with the bank service provider notification rule.",
+      "evidence": [
+        "human:@rosa in ~legal at 2026-11-07T09:32",
+        "human:@rosa in ~legal at 2026-11-07T09:43",
+        "company/policies/incident-response.md:8-10"
+      ],
+      "owner": "rosa",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:43-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "Policy: notify within 72h of confirmation for incidents involving customer data (incident-response.md:6-7). Question also covers incidents affecting services, and it becomes a contractual commitment. Need: the hours we commit to Harbor Bank, for data and service-affecting incidents."
+        },
+        {
+          "at": "2026-11-07T09:34:51-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Rosa: bank MSA commits 36h from confirmation, not 72h; 4h+ service disruption -> ASAP (bank service provider rule). MSA is not in company/. Gap: incident-response.md:6-7 (owner Head of Platform) still says 72h and has no service-disruption trigger, so the IR plan doesn't drive the contractual 36h."
+        },
+        {
+          "at": "2026-11-07T09:37:14-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "contested",
+          "note": "Missing evidence: the MSA clause supporting 36h and the 4h service-disruption trigger is not in company/. The cited IR plan states 72 hours for confirmed incidents and does not establish either commitment."
+        },
+        {
+          "at": "2026-11-07T09:41:43-05:00",
+          "by": "auditor",
+          "from": "contested",
+          "to": "contested",
+          "note": "Rosa confirms 36h from confirmation and notification ASAP for incidents that disrupt service for 4+ hours. The answer adds 'or is likely to disrupt', which exceeds her confirmation; the policy covers confirmed data incidents within 72h."
+        },
+        {
+          "at": "2026-11-07T09:42:30-05:00",
+          "by": "clerk",
+          "from": "contested",
+          "to": "drafted",
+          "note": "Answer was wrong per auditor 09:41: narrowed to Rosa's words (09:32): 'if an incident disrupts the service for 4+ hours we tell them as soon as possible'. Removed 'or is likely to disrupt'. IR plan (incident-response.md:6-7, 72h) is still weaker than the MSA. A diff to it is with Rosa, not blocking."
+        },
+        {
+          "at": "2026-11-07T09:45:01-05:00",
+          "by": "clerk",
+          "from": "drafted",
+          "to": "drafted",
+          "note": "Rosa 09:43: the bank MSA governs; incident-response.md:6-7 (72h, data only) is stale. IR plan citation removed because it contradicts the answer. IR plan diff approved by Rosa; waiting on Dev (plan owner, Head of Platform) before applying."
+        },
+        {
+          "at": "2026-11-07T09:45:09-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa owns incident notification/contracts. Her ~legal confirmation states 36 hours from confirmation and ASAP for incidents disrupting service for 4+ hours. The answer now matches that statement; company/policies/incident-response.md:6-7 sets a 72-hour outer notification window and does not contradict the shorter commitment."
+        },
+        {
+          "at": "2026-11-07T09:46:12-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "IR plan aligned to bank MSA (36h / 4h service disruption) with Dev's approval in ~infra at 09:45; answer text unchanged, new plan line added as a receipt alongside Rosa's confirmation."
+        },
+        {
+          "at": "2026-11-07T09:46:37-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Rechecked current wording against Rosa's 09:43 confirmation: it states 36h from confirmation for data incidents and ASAP for incidents that disrupt service for 4+ hours, without the unconfirmed 'likely to' clause. Her MSA confirmation is within her incident-notification/contracts topics; the 72h policy sets an outer limit and does not contradict the shorter notification."
+        },
+        {
+          "at": "2026-11-07T09:46:51-05:00",
+          "by": "auditor",
+          "from": "verified",
+          "to": "verified",
+          "note": "Rosa owns incident notification per OWNERS.yaml; her human receipts support the answer, and the bank-specific plan text at incident-response.md:8-10 matches 36-hour data-incident notice and ASAP notice for service disruption of 4 hours or more. General 72-hour rule at :6-7 does not contradict this explicit bank carveout."
+        },
+        {
+          "at": "2026-11-07T09:47:26-05:00",
+          "by": "auditor",
+          "from": "verified",
+          "to": "verified",
+          "note": "Rechecked current answer and citations: Rosa's 09:43 MSA confirmation matches 36 hours for data incidents and ASAP when service is disrupted for 4+ hours; revised incident-response.md:8-10 now states the same. HB-21's vendor list and code support the updated subprocessor disclosure; HB-24 policy/Terraform and Rosa's provider-retention confirmations support the stated limits; HB-28's cited Dev 09:37 confirmation supports the app-tier facts, with Terraform supporting region, RDS and private subnet AZs. No contradictions found."
+        }
+      ]
+    },
+    {
+      "id": "HB-21",
+      "section": "Third parties",
+      "question": "List every subprocessor that stores or processes Harbor Bank data.",
+      "status": "verified",
+      "answer": "Amazon Web Services (hosting and storage, US, us-east-1); Sentry (error monitoring, PII scrubbed, US); Postmark (transactional email, US); Anthropic (LLM API that drafts exception memos for unmatched transactions). Anthropic was added in our August 2026 release without first completing our vendor security review. The DPA with Anthropic is not yet signed; it is due to be signed by 2026-11-21.",
+      "evidence": [
+        "company/policies/vendor-management.md:12-15",
+        "company/services/recon/memo.py:9-11",
+        "company/services/recon/memo.py:21-27",
+        "human:@rosa in ~legal at 2026-11-07T09:32",
+        "human:@rosa in ~legal at 2026-11-07T09:38"
+      ],
+      "owner": "rosa",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:43-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "Subprocessor list: AWS, Sentry, Postmark (vendor-management.md:12-14). Code sends customer statement data to the Anthropic API (memo.py:9-11, 21-27; shipped 2026-08); Anthropic is not on the list. Need: is Anthropic a subprocessor under a signed DPA (date)? Any others missing?"
+        },
+        {
+          "at": "2026-11-07T09:34:51-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Rosa confirms Anthropic is a subprocessor, skipped vendor review, DPA to be signed by 2026-11-21, adding to subprocessor list today (diff to vendor-management.md proposed in ~legal, not applied yet). Breach of vendor-management.md:5-6 (review + DPA before data). Disclosure; may belong as exception."
+        },
+        {
+          "at": "2026-11-07T09:37:14-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked vendor policy and recon code: Anthropic processes unmatched statement-line fields and candidate entries; current policy list omits Anthropic. The answer discloses the unreviewed use and unsigned DPA; current status and 2026-11-21 commitment are Rosa's direct legal-owner attestation."
+        },
+        {
+          "at": "2026-11-07T09:40:18-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Rosa approved subprocessor diff at 09:38; applied as vendor-management.md:15. DPA unsigned, due 2026-11-21 (Rosa 09:38). Dropped 'US' for Anthropic from this answer while HB-23 location is contested (memo.py sets no region)."
+        },
+        {
+          "at": "2026-11-07T09:45:09-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa owns subprocessor/vendor topics. vendor-management.md:12-15 lists AWS, Sentry, Postmark and Anthropic; recon code confirms Anthropic receives statement data. Rosa confirms the use bypassed review and the DPA remains unsigned due 2026-11-21; answer discloses these facts."
+        },
+        {
+          "at": "2026-11-07T09:46:37-05:00",
+          "by": "auditor",
+          "from": "verified",
+          "to": "verified",
+          "note": "Rechecked citation fix: vendor-management.md:12-15 lists all four subprocessors including Anthropic; recon code confirms Anthropic is used for exception memos. Rosa's legal-owner confirmations support the unreviewed-use disclosure and unsigned DPA due 2026-11-21. No company/ contradiction."
+        }
+      ]
+    },
+    {
+      "id": "HB-22",
+      "section": "Third parties",
+      "question": "Do you use generative AI or LLM services that process Harbor Bank data? If yes, describe the service, the data sent, and the contractual protections.",
+      "status": "verified",
+      "answer": "Yes. Since our August 2026 release, the reconciliation service uses Anthropic's API (Claude Sonnet 4.5) to draft short exception memos for statement lines that cannot be matched to a ledger entry. For each unmatched line we send the counterparty name, amount, value date and remittance text as they appear on the statement, together with the nearest candidate ledger entries. Under our order form with Anthropic, these inputs are deleted within 30 days and are not used to train models. This use did not go through our vendor security review before launch. The DPA with Anthropic is not yet signed; it is due to be signed by 2026-11-21.",
+      "evidence": [
+        "company/services/recon/memo.py:1-5",
+        "company/services/recon/memo.py:13-27",
+        "company/policies/vendor-management.md:15",
+        "human:@rosa in ~legal at 2026-11-07T09:32",
+        "human:@rosa in ~legal at 2026-11-07T09:38"
+      ],
+      "owner": "rosa",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:43-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "Code says Yes: memo.py:1-5, 21-27 sends unmatched statement lines (counterparty name, amount, value date, free-text remittance) + nearest ledger candidates to Anthropic claude-sonnet-4-5 to draft exception memos. Last year's answer was No. vendor-management.md:5-6 requires security review + signed DPA before data is sent. Need: DPA signed (yes/no, date), retention / no-training terms, security review done (yes/no)."
+        },
+        {
+          "at": "2026-11-07T09:34:51-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Rosa's list of fields omits the nearest ledger candidates; code sends them too (memo.py:17, 27), so the answer includes them. No-training term is per Rosa (no contract copy in company/). Retention of inputs at Anthropic asked under HB-24. Breach of vendor-management.md:5-6. Disclosure; may belong as exception."
+        },
+        {
+          "at": "2026-11-07T09:37:14-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "contested",
+          "note": "Missing evidence: code supports Anthropic, Claude Sonnet 4.5 and the statement/candidate payload, but no cited source supports the claim that commercial API terms exclude training. Vendor policy says a signed DPA was required before data was sent; answer discloses that it remains unsigned."
+        },
+        {
+          "at": "2026-11-07T09:40:18-05:00",
+          "by": "clerk",
+          "from": "contested",
+          "to": "drafted",
+          "note": "Answers auditor contest (no source for no-training): Rosa 09:38 attests the Anthropic order form says memo inputs deleted within 30 days and not used for training. Order form itself is not in company/. Breach of vendor-management.md:5-6 disclosed in the answer."
+        },
+        {
+          "at": "2026-11-07T09:41:43-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa owns generative AI/vendor terms. Her ~legal confirmation supports the no-training API term, review/DPA status and 2026-11-21 commitment; recon code confirms model and payload, and nothing in company/ contradicts the answer."
+        },
+        {
+          "at": "2026-11-07T09:42:52-05:00",
+          "by": "auditor",
+          "from": "verified",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa owns generative AI/vendor terms. Her ~legal replies confirm statement and candidate payload, commercial API no-training terms, 30-day input deletion under the order form, vendor review omission and DPA due 2026-11-21. Code supports model/payload; company/ does not contradict."
+        }
+      ]
+    },
+    {
+      "id": "HB-23",
+      "section": "Privacy",
+      "question": "In which countries or regions will Harbor Bank data be stored?",
+      "status": "verified",
+      "answer": "United States only. Harbor Bank data is stored in AWS us-east-1. Our subprocessors Sentry, Postmark and Anthropic process it in the US; our order form with Anthropic commits it to US processing for our account.",
+      "evidence": [
+        "company/infra/terraform/providers.tf:14",
+        "company/policies/data-retention.md:9",
+        "company/policies/vendor-management.md:12-15",
+        "human:@rosa in ~legal at 2026-11-07T09:32",
+        "human:@rosa in ~legal at 2026-11-07T09:43"
+      ],
+      "owner": "rosa",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:43-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "AWS us-east-1 (providers.tf:14, data-retention.md:9); Sentry, Postmark US (vendor-management.md:12-14). Anthropic location unknown. Need: where Anthropic processes/stores the memo inputs."
+        },
+        {
+          "at": "2026-11-07T09:34:51-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Anthropic US processing per Rosa; memo.py uses the default API endpoint, no region setting in code."
+        },
+        {
+          "at": "2026-11-07T09:37:14-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "contested",
+          "note": "Missing evidence: the cited vendor list gives US locations for AWS, Sentry and Postmark but omits Anthropic; no company source establishes Anthropic's processing location. The US storage policy does not establish this additional processor-location claim."
+        },
+        {
+          "at": "2026-11-07T09:41:43-05:00",
+          "by": "auditor",
+          "from": "contested",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa owns data location and vendor topics. Her ~legal confirmation says Anthropic processes API traffic in the US; current vendor-management.md:12-15 lists AWS, Sentry, Postmark and Anthropic in the US, with AWS us-east-1; nothing contradicts the answer."
+        },
+        {
+          "at": "2026-11-07T09:45:01-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Rosa 09:43: Anthropic order form commits to US processing. memo.py does not pin a region; this rests on Rosa, not code. Subprocessor list cite widened to :12-15 (Anthropic row added)."
+        },
+        {
+          "at": "2026-11-07T09:45:09-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa owns data-location/vendor topics. Her ~legal confirmation says Anthropic API traffic is processed in the US; data-retention.md:9 and vendor-management.md:12-15 support US storage/locations. The API code's lack of an explicit region does not contradict Rosa's confirmation."
+        }
+      ]
+    },
+    {
+      "id": "HB-24",
+      "section": "Privacy",
+      "question": "How soon after contract termination is Harbor Bank data deleted, including from backups?",
+      "status": "verified",
+      "answer": "Within 30 days of contract termination we delete Harbor Bank data from our production systems. Database backups are currently retained for 14 days and age out after that, so no copy remains in our database backups more than 44 days after termination. If we restore 35-day backup retention, as our backup policy requires, that limit becomes 65 days. Reconciliation exports expire automatically 30 days after they are created. Statement lines sent to Anthropic to draft exception memos are deleted by Anthropic within 30 days under our order form. Our error-monitoring provider (Sentry) keeps data for 30 days and our transactional email provider (Postmark) for 45 days.",
+      "evidence": [
+        "company/policies/data-retention.md:6-8",
+        "company/infra/terraform/rds.tf:17",
+        "company/policies/backup-and-recovery.md:7",
+        "company/infra/terraform/s3.tf:48-55",
+        "human:@rosa in ~legal at 2026-11-07T09:32",
+        "human:@rosa in ~legal at 2026-11-07T09:38",
+        "human:@rosa in ~legal at 2026-11-07T09:43",
+        "human:@dev in ~infra at 2026-11-07T10:00"
+      ],
+      "owner": "rosa",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:43-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "Policy: delete within 30 days of termination; backups age out within retention (data-retention.md:6-7). Backup retention is 7 days today (rds.tf:17), may change per HB-11. Need: confirm the 30-day commitment (yes/no); does Anthropic retain memo inputs, and how long?"
+        },
+        {
+          "at": "2026-11-07T09:34:51-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "needs_owner",
+          "note": "Rosa: live data deleted within 30 days of termination; backups age out after that within the backup retention window (data-retention.md:6-7). Still missing: (1) how long Anthropic keeps memo inputs; (2) backup retention is 7 days at rds.tf:17 but Dev asked to restore 35 (HB-11, diff pending), so the outer bound is 37 or 65 days. Draft once both settle."
+        },
+        {
+          "at": "2026-11-07T09:36:33-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "needs_owner",
+          "note": "Rosa 09:35 on HB-11: go with the systems. rds.tf:17 is now 35 days (Dev approved in ~infra), matching backup-and-recovery.md:7. Ledgerline bound: 30 days live + 35 days backups = 65 days. Still missing: Anthropic retention of memo inputs. Draft once Rosa answers."
+        },
+        {
+          "at": "2026-11-07T09:36:52-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "needs_owner",
+          "note": "Backup side settled: rds.tf:17 now 35 days (Dev approved 09:35 in ~infra), so outer bound is 30 + 35 = 65 days after termination. Still missing: how long Anthropic keeps memo inputs (asked Rosa 09:35)."
+        },
+        {
+          "at": "2026-11-07T09:40:18-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "30 days live (Rosa 09:32, data-retention.md:6-7) + 35 days backups (rds.tf:17, restored today under HB-11) = 65. Statements bucket has no versioning in Terraform, so deletes are final. Anthropic 30-day deletion per Rosa 09:38 (order form). Not covered: Sentry and Postmark retention, not in company/; asked Rosa."
+        },
+        {
+          "at": "2026-11-07T09:45:01-05:00",
+          "by": "clerk",
+          "from": "drafted",
+          "to": "drafted",
+          "note": "Rosa 09:43: Sentry 30 days, Postmark 45; nothing passes 65."
+        },
+        {
+          "at": "2026-11-07T09:45:10-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked every cited pointer and retention configuration: policy requires deletion within 30 days; RDS backup_retention_period is 35 days, making the stated database-backup bound 65 days; exports expire after 30 days. Rosa's ~legal order-form confirmation supports Anthropic memo-input deletion within 30 days. No statement-bucket versioning or contradictory backup configuration found."
+        },
+        {
+          "at": "2026-11-07T09:46:37-05:00",
+          "by": "auditor",
+          "from": "verified",
+          "to": "verified",
+          "note": "Rechecked all receipts: data-retention.md:6-8 covers 30-day deletion and exports; rds.tf:17 sets 35-day backup retention (30+35=65); s3.tf:48-55 expires exports at 30 days. Rosa confirms Anthropic memo inputs 30 days and Sentry 30/Postmark 45 days; none exceeds the stated 65-day maximum."
+        },
+        {
+          "at": "2026-11-07T09:57:51-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "needs_owner",
+          "note": "Backup leg depends on HB-11: rds.tf:17 now says 14 days, not 35, so '65 days' would be 44. Rosa's Anthropic/Sentry/Postmark receipts unchanged. Re-derive from rds.tf once Dev settles HB-11."
+        },
+        {
+          "at": "2026-11-07T10:03:24-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Backup leg re-derived from the system: rds.tf:17 is 14 days (Dev 10:00, PLAT-511), so 30 + 14 = 44 days. Rosa 09:35 said the backup leg follows the systems. Dev plans to restore 35 at the December review (HB-11 exception), so the answer states the 65-day bound if that happens. Rosa's 30-day deletion, Anthropic, Sentry and Postmark receipts unchanged."
+        },
+        {
+          "at": "2026-11-07T10:04:18-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Rosa owns retention and contractual commitments; her existing receipts support 30-day production deletion and vendor retention terms. Current Terraform sets 14-day DB backup retention; 30 + 14 = 44 days. If policy retention is restored to 35 days, 30 + 35 = 65 days. Export lifecycle is 30 days. No company/ contradiction found."
+        }
+      ]
+    },
+    {
+      "id": "HB-25",
+      "section": "Personnel",
+      "question": "Do all employees and contractors complete security awareness training at least annually?",
+      "status": "verified",
+      "answer": "Yes. Security awareness training (KnowBe4) is mandatory and annual for all employees and contractors. Completion for the 2026 cycle was 100% at the October 2026 deadline.",
+      "evidence": [
+        "human:@rosa in ~legal at 2026-11-07T09:32"
+      ],
+      "owner": "rosa",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:43-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "No training records in company/. Last year's lead (KnowBe4) covered employees only; question asks employees AND contractors. Need: yes/no for both; 2026 completion date."
+        },
+        {
+          "at": "2026-11-07T09:34:51-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Per Rosa. No training records in company/. Last year's lead covered employees only; Rosa now confirms contractors too."
+        },
+        {
+          "at": "2026-11-07T09:37:14-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "contested",
+          "note": "Missing evidence: the cited prior-year memory says annual KnowBe4 training for employees only; it does not establish contractor completion or 100% completion for the 2026 cycle."
+        },
+        {
+          "at": "2026-11-07T09:41:43-05:00",
+          "by": "auditor",
+          "from": "contested",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa owns security training. Her ~legal confirmation supports annual mandatory KnowBe4 training for employees and contractors and 100% completion by the October 2026 deadline; nothing in company/ contradicts it."
+        },
+        {
+          "at": "2026-11-07T09:42:16-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Citation fix only, answer unchanged. Dropped company/knowledge/answers.jsonl:9: it is last year's LEAD (no receipts, employees only) and doesn't support this answer. The sole receipt is Rosa's owner confirmation (09:32), valid per Mithran's 09:40 policy call. Nothing in company/ records training."
+        },
+        {
+          "at": "2026-11-07T09:42:55-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "owner-confirmed; nothing in company/ contradicts"
+        },
+        {
+          "at": "2026-11-07T09:46:37-05:00",
+          "by": "auditor",
+          "from": "verified",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa owns security training. Her 09:32 legal-room confirmation supports annual mandatory KnowBe4 training for employees and contractors and 100% completion at the October 2026 deadline; the older employees-only memory is not a contradiction."
+        }
+      ]
+    },
+    {
+      "id": "HB-26",
+      "section": "Personnel",
+      "question": "Are background checks performed on personnel with access to customer data?",
+      "status": "verified",
+      "answer": "Yes. Every employee with access to customer data is background-checked by Checkr at hire. Contractors are background-checked by the agencies that engage them, as our contracts with those agencies require. Contractors have read-only access to our production AWS environment; this includes one contractor based in Portugal, who was background-checked by her agency.",
+      "evidence": [
+        "human:@rosa in ~legal at 2026-11-07T09:32",
+        "human:@rosa in ~legal at 2026-11-07T09:43"
+      ],
+      "owner": "rosa",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:43-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "No evidence in company/. Need: yes/no; who is covered (employees, contractors with customer-data access)."
+        },
+        {
+          "at": "2026-11-07T09:34:51-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Per Rosa. Okta: 37 Employees, 6 Contractors; contractors have prod read-only AWS and GitHub, so they have customer-data access. Rosa scoped Checkr to 'every US employee': if any employee is outside the US, the answer is incomplete. Asked."
+        },
+        {
+          "at": "2026-11-07T09:37:14-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "contested",
+          "note": "Missing evidence: the cited Okta group export establishes workforce groups and app assignments, not employee or contractor background-check completion or the agency contract requirement."
+        },
+        {
+          "at": "2026-11-07T09:40:18-05:00",
+          "by": "clerk",
+          "from": "contested",
+          "to": "drafted",
+          "note": "Rosa 09:32: Checkr at hire for every US employee; agency checks contractors, required by contract. Rosa 09:38: only non-US person is one contractor in Portugal, agency ran the check. Dropped Okta cite (auditor: doesn't prove checks). Open: Rosa says the Portugal contractor has no customer-data access, but okta-policies.json:10 gives the whole Contractors group prod read-only AWS. Asked Rosa. The answer holds either way, since every contractor is checked."
+        },
+        {
+          "at": "2026-11-07T09:41:43-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa owns background checks. Her ~legal confirmation supports checks for US employees and agency-checked contractors; she confirms the Portugal contractor has no customer-data access and was checked. Nothing in company/ contradicts the answer."
+        },
+        {
+          "at": "2026-11-07T09:42:52-05:00",
+          "by": "auditor",
+          "from": "verified",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa owns background checks. She confirms Checkr checks at hire for US employees, agency checks for contractors under agency contracts, and that the Portugal contractor has no customer-data access and was checked. Nothing in company/ contradicts this scope."
+        },
+        {
+          "at": "2026-11-07T09:45:01-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Corrected: Rosa's 09:38 answer said the Portugal contractor had no customer-data access. Okta shows the Contractors group (6) on prod AWS read-only; Rosa 09:43 confirmed she is in that group. 09:38 receipt dropped."
+        },
+        {
+          "at": "2026-11-07T09:45:10-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa owns background checks. Her ~legal confirmations support Checkr at hire for employees, required agency checks for contractors, and clarify the Portugal contractor lacks customer-data access. Nothing in company/ contradicts the answer."
+        },
+        {
+          "at": "2026-11-07T09:57:51-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Okta export reformatted; contractor read-only prod AWS assignment unchanged, citation re-pointed from 10."
+        },
+        {
+          "at": "2026-11-07T09:59:04-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Rosa owns background checks. Her 09:32 and 09:43 confirmations cover US employees, all contractors, and the Portugal contractor's check and read-only production access. The dated-future Okta export is not relied on; company/ contains no contradiction."
+        },
+        {
+          "at": "2026-11-07T10:00:16-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Dropped the Okta pointer (the export is future-dated). The contractors' read-only prod AWS access, the Portugal contractor included, is Rosa's 09:43 confirmation."
+        },
+        {
+          "at": "2026-11-07T10:00:31-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Rosa owns background checks. Her 09:32 confirmation covers every US employee and contractors; her 09:43 confirmation covers the Portugal contractor, agency check, and read-only production AWS access. No company/ source contradicts the answer."
+        }
+      ]
+    },
+    {
+      "id": "HB-27",
+      "section": "Insurance",
+      "question": "Do you carry cyber liability insurance? State the coverage limit.",
+      "status": "verified",
+      "answer": "Yes. We carry cyber liability insurance with Coalition, with a $5,000,000 aggregate limit. The policy renews on 2027-03-01.",
+      "evidence": [
+        "human:@rosa in ~legal at 2026-11-07T09:32"
+      ],
+      "owner": "rosa",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:43-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "No evidence in company/. Need: yes/no, carrier, coverage limit."
+        },
+        {
+          "at": "2026-11-07T09:34:51-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Per Rosa. No policy document in company/."
+        },
+        {
+          "at": "2026-11-07T09:37:14-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "contested",
+          "note": "Missing evidence: the only receipt is Rosa's assertion; company/ contains no policy, insurance evidence or source for insurer, ,000,000 limit, or 2027-03-01 renewal."
+        },
+        {
+          "at": "2026-11-07T09:41:43-05:00",
+          "by": "auditor",
+          "from": "contested",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa owns insurance. Her ~legal confirmation supports Coalition, M aggregate limit and 2027-03-01 renewal; nothing in company/ contradicts it."
+        }
+      ]
+    },
+    {
+      "id": "HB-28",
+      "section": "Resilience",
+      "question": "Is the production environment deployed across multiple availability zones?",
+      "status": "verified",
+      "answer": "Yes. Production runs in AWS us-east-1. The production PostgreSQL database (Amazon RDS) is deployed Multi-AZ, and the private subnets span three availability zones (us-east-1a, us-east-1b, us-east-1c). The application tier runs on Amazon ECS on Fargate across the same three availability zones, with a minimum of three tasks.",
+      "evidence": [
+        "company/infra/terraform/providers.tf:14",
+        "company/infra/terraform/rds.tf:9",
+        "company/infra/terraform/network.tf:6-11",
+        "human:@dev in ~infra at 2026-11-07T09:37"
+      ],
+      "owner": "dev",
+      "history": [
+        {
+          "at": "2026-11-07T09:31:43-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "RDS multi_az (rds.tf:9); private subnets us-east-1a/b/c (network.tf:6-11). Public subnets for the ALB have no AZ pinned (network.tf:13-18) and app-tier compute isn't in the Terraform here. Need: does the app tier run in >=2 AZs (yes/no)?"
+        },
+        {
+          "at": "2026-11-07T09:34:36-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Dev confirmed three AZs for the app tier. Public (ALB) subnets have no explicit AZ in network.tf:13-18 and app compute isn't in Terraform, so the app-tier spread rests on Dev."
+        },
+        {
+          "at": "2026-11-07T09:36:01-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "contested",
+          "note": "Missing evidence: Terraform defines three public subnets without AZ assignments and contains no app-tier deployment proving production spans three AZs; only private subnet and RDS configuration support the claim."
+        },
+        {
+          "at": "2026-11-07T09:37:51-05:00",
+          "by": "clerk",
+          "from": "contested",
+          "to": "drafted",
+          "note": "Narrowed per auditor contest. DB + network from Terraform; app tier (ECS Fargate, 1a/b/c, min 3 tasks) is in the platform repo, not company/, so it rests on Dev's word at 2026-11-07T09:37. No longer claims public/ALB subnets."
+        },
+        {
+          "at": "2026-11-07T09:38:18-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "contested",
+          "note": "Database Multi-AZ and three private subnet AZs are supported, but the app-tier ECS/Fargate claim has no inspectable platform-repo citation or deployment evidence; Dev assertion alone does not verify the three-AZ app tier."
+        },
+        {
+          "at": "2026-11-07T09:41:43-05:00",
+          "by": "auditor",
+          "from": "contested",
+          "to": "contested",
+          "note": "Dev confirms the environment spans three AZs and RDS is Multi-AZ, but the answer also claims ECS Fargate placement across all three AZs and a minimum of three tasks. Those details exceed his confirmation, and company/ contains no ECS/Fargate or task-count configuration; rds.tf:9 establishes only Multi-AZ for RDS."
+        },
+        {
+          "at": "2026-11-07T09:42:30-05:00",
+          "by": "clerk",
+          "from": "contested",
+          "to": "drafted",
+          "note": "Auditor 09:41 read Dev's 09:32 reply only. The cited receipt is Dev in ~infra at 09:37, verbatim: 'the app tier lives in the platform repo, not here: ECS on Fargate across us-east-1a/b/c, 3 tasks minimum. Narrow the answer to what this repo shows, and say the app tier spans three AZs on my word.' The answer claims nothing beyond that."
+        },
+        {
+          "at": "2026-11-07T09:46:37-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "owner-confirmed; Dev owns availability. His 09:37 infra-room receipt explicitly confirms ECS on Fargate across us-east-1a/b/c with at least 3 tasks. Terraform supports us-east-1, Multi-AZ RDS and three private subnet AZs; no company/ source contradicts the app-tier confirmation."
+        }
+      ]
+    }
+  ]
+}

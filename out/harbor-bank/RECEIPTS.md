@@ -1,0 +1,297 @@
+# Receipts: Harbor Bank
+
+Questionnaire `inbox/harbor-bank-vendor-security-questionnaire.csv` · exported 2026-11-07T10:17:34-05:00
+
+- 28 answers, every one with a receipt
+- 11 answers were contested by the auditor before they went out
+- 4 disclosed exceptions
+
+## Disclosed exceptions
+
+- **HB-01**: We maintain a written Information Security Policy (version 3.2), owned by the Head of Platform and approved on 2025-09-15, with an annual review cycle. The 2026 review is overdue. The review and re-approval by our CEO is scheduled for 2026-11-20.
+- **HB-11**: No. The production database is backed up automatically every night, with point-in-time recovery, but backups are currently retained for 14 days, not 30. Retention was 7 days from March 2026 until 2026-11-07, so the full 14-day history is available from 2026-11-14. Our backup policy requires 35 days, and we plan to restore 35-day retention at our December 2026 review.
+- **HB-13**: No. CloudTrail security audit logs are retained for 90 days in CloudWatch Logs and for 180 days in an encrypted S3 archive with log file validation. We are extending S3 retention of audit logs to 400 days by 2026-12-31.
+- **HB-15**: No. Automated dependency vulnerability scanning has not run since June 2026, when our previous scanner was removed from CI. We are enabling GitHub Dependabot by 2026-11-13.
+
+## Answers
+
+### HB-01 · Governance
+> Do you maintain a written information security policy, approved by management and reviewed at least annually?
+
+We maintain a written Information Security Policy (version 3.2), owned by the Head of Platform and approved on 2025-09-15, with an annual review cycle. The 2026 review is overdue. The review and re-approval by our CEO is scheduled for 2026-11-20.
+
+- receipt: `company/policies/information-security-policy.md:1-3`
+- receipt: `human:@dev in ~infra at 2026-11-07T09:37`
+
+### HB-02 · Access control
+> Is single sign-on enforced for all workforce access to production systems?
+
+Yes. All workforce access to production goes through Okta SSO; there are no local logins on production systems. Production AWS access is granted through AWS IAM Identity Center federated to Okta, with admin roles assigned to the Engineering group only. GitHub Enterprise and the Ledgerline Admin Console are also Okta-assigned applications.
+
+- receipt: `company/idp/okta-policies.json:9-13`
+- receipt: `company/idp/okta-policies.json:2`
+- receipt: `company/policies/access-control.md:5-6`
+- receipt: `human:@dev in ~infra at 2026-11-07T10:00`
+- history: drafted (clerk) → verified (auditor) → drafted (clerk) → contested (auditor) → needs_owner (clerk) → drafted (clerk) → verified (auditor)
+
+### HB-03 · Access control
+> Is multi-factor authentication enforced for ALL workforce accounts (employees and contractors) that can access production systems or customer data?
+
+Yes. MFA (Okta Verify push or WebAuthn) is enforced for every workforce account, employees and contractors, through a single Okta sign-on policy, and there is no password-only rule. Until 2026-11-07, six contractor accounts with read-only production AWS access and GitHub access signed in with a password only, under a temporary onboarding rule in place since 2026-04-18. That rule was removed and those accounts were moved onto the MFA policy on 2026-11-07.
+
+- receipt: `company/idp/okta-policies.json:16-23`
+- receipt: `company/idp/okta-policies.json:4-8`
+- receipt: `company/idp/okta-policies.json:9-13`
+- receipt: `company/idp/okta-policies.json:2`
+- receipt: `company/policies/access-control.md:7-9`
+- receipt: `human:@dev in ~infra at 2026-11-07T09:32`
+- receipt: `human:@dev in ~infra at 2026-11-07T10:00`
+
+### HB-04 · Access control
+> Describe your password requirements for workforce accounts.
+
+Workforce passwords are governed by the Okta password policy: minimum 14 characters, the last 10 passwords cannot be reused, new passwords are checked against known-breached password lists, and accounts lock after 10 failed sign-in attempts. Passwords do not expire on a fixed schedule.
+
+- receipt: `company/idp/okta-policies.json:25`
+- receipt: `company/idp/okta-policies.json:2`
+- receipt: `company/policies/access-control.md:10`
+- history: drafted (clerk) → verified (auditor) → drafted (clerk) → contested (auditor) → needs_owner (clerk) → drafted (clerk) → verified (auditor)
+
+### HB-05 · Access control
+> Are user access rights to production reviewed at least quarterly? When was the last review?
+
+Yes. Production access rights are reviewed quarterly in Okta. The most recent review was completed on 2026-10-06; the next is scheduled for January 2027.
+
+- receipt: `company/policies/access-control.md:13`
+- receipt: `human:@dev in ~infra at 2026-11-07T09:32`
+- history: needs_owner (clerk) → drafted (clerk) → contested (auditor) → verified (auditor)
+
+### HB-06 · Encryption
+> Is all customer data encrypted at rest? Specify the algorithm and how keys are managed.
+
+Yes. Customer data at rest is encrypted with AES-256. The production PostgreSQL database (Amazon RDS) and the S3 buckets holding customer statement files and reconciliation exports are encrypted with a customer-managed AWS KMS key that rotates automatically every year. Reconciliation export files created before 2026-11-07 remain encrypted with AES-256 under S3-managed keys until they expire, no later than 2026-12-07.
+
+- receipt: `company/infra/terraform/rds.tf:7-8`
+- receipt: `company/infra/terraform/s3.tf:6-13`
+- receipt: `company/infra/terraform/s3.tf:30-38`
+- receipt: `company/infra/terraform/s3.tf:53`
+- receipt: `company/infra/terraform/kms.tf:1-5`
+- receipt: `human:@dev in ~infra at 2026-11-07T09:35`
+
+### HB-07 · Encryption
+> Is customer data encrypted in transit using TLS 1.2 or higher?
+
+Yes, for customer traffic over public networks. The public API load balancer serves HTTPS using AWS security policy ELBSecurityPolicy-TLS13-1-2-2021-06 (TLS 1.2 minimum, TLS 1.3 preferred). Plain HTTP requests on port 80 are redirected to HTTPS with a 301.
+
+- receipt: `company/infra/terraform/network.tf:27-31`
+- receipt: `company/infra/terraform/network.tf:39-50`
+- receipt: `company/policies/information-security-policy.md:13-14`
+
+### HB-08 · Encryption
+> Are encryption keys rotated automatically?
+
+Yes. The customer-managed AWS KMS key (alias/ledgerline-data) used for the production database, the customer statements bucket, the audit log bucket and Secrets Manager has automatic key rotation enabled; AWS KMS rotates the key material annually. The production database credential is rotated automatically every 30 days.
+
+- receipt: `company/infra/terraform/kms.tf:1-3`
+- receipt: `company/infra/terraform/kms.tf:7-9`
+- receipt: `company/policies/information-security-policy.md:12`
+- receipt: `company/infra/terraform/secrets.tf:6-9`
+
+### HB-09 · Network
+> Are databases holding customer data isolated from the public internet?
+
+Yes. The production PostgreSQL database (Amazon RDS) is not publicly accessible and runs in private subnets. Its security group accepts connections on port 5432 only from the application tier's security group.
+
+- receipt: `company/infra/terraform/rds.tf:10-12`
+- receipt: `company/infra/terraform/rds.tf:23-25`
+- receipt: `company/infra/terraform/network.tf:53-61`
+- receipt: `company/policies/information-security-policy.md:17-19`
+
+### HB-10 · Secrets
+> How are application secrets and credentials stored and rotated?
+
+Application secrets and credentials are stored in AWS Secrets Manager, encrypted with Ledgerline's customer-managed AWS KMS key. The production database credential is rotated automatically every 30 days by a Secrets Manager rotation function. Third-party API keys held in Secrets Manager do not have automatic rotation configured.
+
+- receipt: `company/infra/terraform/secrets.tf:1-4`
+- receipt: `company/infra/terraform/secrets.tf:6-10`
+- receipt: `company/infra/terraform/secrets.tf:12-15`
+- receipt: `company/policies/information-security-policy.md:22`
+
+### HB-11 · Resilience
+> Are production databases backed up at least daily, with backups retained for at least 30 days?
+
+No. The production database is backed up automatically every night, with point-in-time recovery, but backups are currently retained for 14 days, not 30. Retention was 7 days from March 2026 until 2026-11-07, so the full 14-day history is available from 2026-11-14. Our backup policy requires 35 days, and we plan to restore 35-day retention at our December 2026 review.
+
+- receipt: `company/infra/terraform/rds.tf:14-17`
+- receipt: `company/policies/backup-and-recovery.md:5-7`
+- receipt: `human:@dev in ~infra at 2026-11-07T09:35`
+- receipt: `human:@dev in ~infra at 2026-11-07T10:00`
+
+### HB-12 · Resilience
+> State your RPO and RTO for the core platform, and when a restore was last tested.
+
+For the production ledger database: RPO 1 hour, RTO 4 hours. Point-in-time recovery is enabled for the full backup retention period. The most recent restore test was on 2026-09-12: the production database was restored from its nightly snapshot into a separate instance, and the restore plus integrity checks took 1 h 52 min with matching checksums.
+
+- receipt: `company/policies/backup-and-recovery.md:9`
+- receipt: `company/infra/terraform/rds.tf:14-16`
+- receipt: `company/evidence/restore-test-2026-Q3.md:3-4`
+
+### HB-13 · Logging
+> Are security audit logs retained for at least 12 months?
+
+No. CloudTrail security audit logs are retained for 90 days in CloudWatch Logs and for 180 days in an encrypted S3 archive with log file validation. We are extending S3 retention of audit logs to 400 days by 2026-12-31.
+
+- receipt: `company/infra/terraform/logging.tf:13`
+- receipt: `company/infra/terraform/logging.tf:44`
+- receipt: `company/infra/terraform/logging.tf:4-6`
+- receipt: `human:@dev in ~infra at 2026-11-07T09:32`
+
+### HB-14 · Logging
+> Is CloudTrail (or equivalent) enabled in all regions, with tamper detection on log files?
+
+Yes, in the production AWS account. CloudTrail runs as a multi-region trail that includes global service events, with log file integrity validation enabled to detect tampering. Logs are delivered to a dedicated S3 bucket encrypted with a customer-managed KMS key, and to CloudWatch Logs.
+
+- receipt: `company/infra/terraform/logging.tf:1-8`
+- receipt: `company/infra/terraform/logging.tf:25-33`
+
+### HB-15 · Vulnerability management
+> Are application dependencies scanned automatically for known vulnerabilities at least weekly?
+
+No. Automated dependency vulnerability scanning has not run since June 2026, when our previous scanner was removed from CI. We are enabling GitHub Dependabot by 2026-11-13.
+
+- receipt: `company/.github/workflows/ci.yml:23-30`
+- receipt: `human:@dev in ~infra at 2026-11-07T09:32`
+
+### HB-16 · Vulnerability management
+> When was your most recent independent penetration test, and have all critical and high findings been remediated?
+
+Our most recent independent penetration test was performed by Bramble Security (CREST-accredited) from 2025-04-07 to 2025-04-18, covering the public API, web app, admin console and AWS configuration. It had no Critical findings and two High findings. BR-01 was fixed on 2025-05-02. BR-02 was fixed on 2025-09-03, but Bramble has not yet retested that fix; it will be verified in our next test with Bramble Security, booked for 2026-12-01. No penetration test has been performed since April 2025.
+
+- receipt: `company/evidence/pentest-2025-04-summary.md:3-4`
+- receipt: `company/evidence/pentest-2025-04-summary.md:8-11`
+- receipt: `human:@dev in ~infra at 2026-11-07T09:32`
+- receipt: `human:@dev in ~infra at 2026-11-07T09:37`
+- receipt: `human:@dev in ~infra at 2026-11-07T09:53`
+- history: needs_owner (clerk) → exception (clerk) → contested (auditor) → verified (auditor) → drafted (clerk) → verified (auditor) → drafted (clerk) → verified (auditor)
+
+### HB-17 · SDLC
+> Are all code changes peer-reviewed before they reach production?
+
+Yes. Every change to main requires a pull request with an approving review from a code owner, and direct pushes to main are blocked. CI runs tests and lint on every pull request. Production deploys run only from main and require approval from a second engineer through GitHub's protected production environment.
+
+- receipt: `company/.github/CODEOWNERS:1-4`
+- receipt: `company/policies/secure-sdlc.md:3-7`
+- receipt: `company/.github/workflows/ci.yml:2-5`
+- receipt: `company/.github/workflows/ci.yml:32-36`
+
+### HB-18 · SDLC
+> Are production, staging and development environments separated?
+
+Yes. Production, staging and development run in separate AWS accounts. Production infrastructure is defined in Terraform with its own state.
+
+- receipt: `company/policies/secure-sdlc.md:8`
+- receipt: `company/infra/terraform/providers.tf:6-10`
+
+### HB-19 · Incident response
+> Do you have a documented incident response plan that is tested at least annually?
+
+Yes. Ledgerline maintains a documented incident response plan with SEV1-SEV3 severity levels and an on-call incident commander. The plan is exercised with a tabletop at least once a year. The most recent was on 2026-02-19 (leaked AWS access key scenario, simulated containment in 38 minutes); both follow-up actions were completed by 2026-03-10.
+
+- receipt: `company/policies/incident-response.md:3-5`
+- receipt: `company/policies/incident-response.md:11-12`
+- receipt: `company/evidence/ir-tabletop-2026-02.md:1-5`
+
+### HB-20 · Incident response
+> Within what timeframe will you notify Harbor Bank of a security incident affecting our data or services?
+
+We notify Harbor Bank within 36 hours of confirming a security incident affecting Harbor Bank data. If an incident disrupts the services we provide to Harbor Bank for 4 hours or more, we notify Harbor Bank as soon as possible, in line with the bank service provider notification rule.
+
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:32`
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:43`
+- receipt: `company/policies/incident-response.md:8-10`
+- history: needs_owner (clerk) → drafted (clerk) → contested (auditor) → contested (auditor) → drafted (clerk) → drafted (clerk) → verified (auditor) → drafted (clerk) → verified (auditor) → verified (auditor) → verified (auditor)
+
+### HB-21 · Third parties
+> List every subprocessor that stores or processes Harbor Bank data.
+
+Amazon Web Services (hosting and storage, US, us-east-1); Sentry (error monitoring, PII scrubbed, US); Postmark (transactional email, US); Anthropic (LLM API that drafts exception memos for unmatched transactions). Anthropic was added in our August 2026 release without first completing our vendor security review. The DPA with Anthropic is not yet signed; it is due to be signed by 2026-11-21.
+
+- receipt: `company/policies/vendor-management.md:12-15`
+- receipt: `company/services/recon/memo.py:9-11`
+- receipt: `company/services/recon/memo.py:21-27`
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:32`
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:38`
+
+### HB-22 · Third parties
+> Do you use generative AI or LLM services that process Harbor Bank data? If yes, describe the service, the data sent, and the contractual protections.
+
+Yes. Since our August 2026 release, the reconciliation service uses Anthropic's API (Claude Sonnet 4.5) to draft short exception memos for statement lines that cannot be matched to a ledger entry. For each unmatched line we send the counterparty name, amount, value date and remittance text as they appear on the statement, together with the nearest candidate ledger entries. Under our order form with Anthropic, these inputs are deleted within 30 days and are not used to train models. This use did not go through our vendor security review before launch. The DPA with Anthropic is not yet signed; it is due to be signed by 2026-11-21.
+
+- receipt: `company/services/recon/memo.py:1-5`
+- receipt: `company/services/recon/memo.py:13-27`
+- receipt: `company/policies/vendor-management.md:15`
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:32`
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:38`
+- history: needs_owner (clerk) → drafted (clerk) → contested (auditor) → drafted (clerk) → verified (auditor) → verified (auditor)
+
+### HB-23 · Privacy
+> In which countries or regions will Harbor Bank data be stored?
+
+United States only. Harbor Bank data is stored in AWS us-east-1. Our subprocessors Sentry, Postmark and Anthropic process it in the US; our order form with Anthropic commits it to US processing for our account.
+
+- receipt: `company/infra/terraform/providers.tf:14`
+- receipt: `company/policies/data-retention.md:9`
+- receipt: `company/policies/vendor-management.md:12-15`
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:32`
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:43`
+- history: needs_owner (clerk) → drafted (clerk) → contested (auditor) → verified (auditor) → drafted (clerk) → verified (auditor)
+
+### HB-24 · Privacy
+> How soon after contract termination is Harbor Bank data deleted, including from backups?
+
+Within 30 days of contract termination we delete Harbor Bank data from our production systems. Database backups are currently retained for 14 days and age out after that, so no copy remains in our database backups more than 44 days after termination. If we restore 35-day backup retention, as our backup policy requires, that limit becomes 65 days. Reconciliation exports expire automatically 30 days after they are created. Statement lines sent to Anthropic to draft exception memos are deleted by Anthropic within 30 days under our order form. Our error-monitoring provider (Sentry) keeps data for 30 days and our transactional email provider (Postmark) for 45 days.
+
+- receipt: `company/policies/data-retention.md:6-8`
+- receipt: `company/infra/terraform/rds.tf:17`
+- receipt: `company/policies/backup-and-recovery.md:7`
+- receipt: `company/infra/terraform/s3.tf:48-55`
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:32`
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:38`
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:43`
+- receipt: `human:@dev in ~infra at 2026-11-07T10:00`
+
+### HB-25 · Personnel
+> Do all employees and contractors complete security awareness training at least annually?
+
+Yes. Security awareness training (KnowBe4) is mandatory and annual for all employees and contractors. Completion for the 2026 cycle was 100% at the October 2026 deadline.
+
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:32`
+- history: needs_owner (clerk) → drafted (clerk) → contested (auditor) → verified (auditor) → drafted (clerk) → verified (auditor) → verified (auditor)
+
+### HB-26 · Personnel
+> Are background checks performed on personnel with access to customer data?
+
+Yes. Every employee with access to customer data is background-checked by Checkr at hire. Contractors are background-checked by the agencies that engage them, as our contracts with those agencies require. Contractors have read-only access to our production AWS environment; this includes one contractor based in Portugal, who was background-checked by her agency.
+
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:32`
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:43`
+- history: needs_owner (clerk) → drafted (clerk) → contested (auditor) → drafted (clerk) → verified (auditor) → verified (auditor) → drafted (clerk) → verified (auditor) → drafted (clerk) → verified (auditor) → drafted (clerk) → verified (auditor)
+
+### HB-27 · Insurance
+> Do you carry cyber liability insurance? State the coverage limit.
+
+Yes. We carry cyber liability insurance with Coalition, with a $5,000,000 aggregate limit. The policy renews on 2027-03-01.
+
+- receipt: `human:@rosa in ~legal at 2026-11-07T09:32`
+- history: needs_owner (clerk) → drafted (clerk) → contested (auditor) → verified (auditor)
+
+### HB-28 · Resilience
+> Is the production environment deployed across multiple availability zones?
+
+Yes. Production runs in AWS us-east-1. The production PostgreSQL database (Amazon RDS) is deployed Multi-AZ, and the private subnets span three availability zones (us-east-1a, us-east-1b, us-east-1c). The application tier runs on Amazon ECS on Fargate across the same three availability zones, with a minimum of three tasks.
+
+- receipt: `company/infra/terraform/providers.tf:14`
+- receipt: `company/infra/terraform/rds.tf:9`
+- receipt: `company/infra/terraform/network.tf:6-11`
+- receipt: `human:@dev in ~infra at 2026-11-07T09:37`
+- history: needs_owner (clerk) → drafted (clerk) → contested (auditor) → drafted (clerk) → contested (auditor) → contested (auditor) → drafted (clerk) → verified (auditor)

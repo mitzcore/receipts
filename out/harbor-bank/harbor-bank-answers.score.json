@@ -1,0 +1,13 @@
+{
+  "file": "out/harbor-bank/harbor-bank-answers.csv",
+  "answers": 28,
+  "false_attestations": 0,
+  "dead_citations": 0,
+  "guesses": 0,
+  "not_sendable": 0,
+  "detail": {
+    "false": [],
+    "guesses": [],
+    "not_sendable": []
+  }
+}

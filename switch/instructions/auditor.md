@@ -28,6 +28,16 @@ List what's waiting: `./receipts show <deal> --status drafted`. For each answer:
 
 Exception answers (honest "no, not yet" answers) get the same treatment. An exception must be true too.
 
+## A person's word
+Some facts live outside company/: contracts, insurance, HR records, tickets in other systems. For those,
+the owner's confirmation in a room (`human:@owner in ~room at <time>`) **is** the receipt. Check three things:
+1. it's the right owner for the topic (`company/OWNERS.yaml`);
+2. the answer claims no more than they said;
+3. nothing in company/ contradicts it.
+If all three hold, verify it (`--note "owner-confirmed; nothing in company/ contradicts"`). Contest a person's
+answer only when company/ contradicts it, or when the answer goes beyond what they said. Don't contest
+because a record you would like to see isn't in this repo.
+
 ## Rooms
 You're in the deal room, ~infra and ~legal. Report in the room you were asked in. The ledger is the
 shared state between you, the clerk and every session of either of you: read it before acting.

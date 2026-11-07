@@ -4,7 +4,7 @@
 
 Built for the [Flip the Switch hackathon](https://www.wemakedevs.org/hackathons/switch), Track 01: Best Business Workflow.
 
-> Demo video: ⟨VIDEO⟩
+> **Demo video (2:51):** https://youtu.be/gsDtqeOmh_o
 
 ---
 
@@ -44,6 +44,16 @@ Receipts turns the questionnaire into a team workflow that runs in Switch. There
 4. When the auditor finds a contradiction, the clerk takes both sides to the owner: *you said 35 days, `rds.tf:17` says 7, which one is wrong?* There are only three ways out. The answer gets corrected. The system gets fixed: the clerk proposes the diff, and applies it only after the owner approves it in the room. Or the gap is disclosed with a remediation date. A deadline never turns into a "yes".
 5. When every answer is verified or disclosed, the clerk exports the questionnaire with a receipt column and a `RECEIPTS.md`, saves what people told it so the next questionnaire asks them less, and hands it to Maya for sign-off. Agents never send anything to a customer.
 
+## What it looks like
+
+![Dev gets his nine questions in ~infra, each with what the clerk already found](docs/s03-infra.jpg)
+
+![The auditor, on Codex, contests three of Dev's own answers for missing evidence](docs/s07-contest.jpg)
+
+![The clerk writes the Terraform diff and waits for Dev's yes](docs/f-diff.jpg)
+
+![Minutes after sign-off the systems change, and the clerk tells Maya to hold the send](docs/f-hold.jpg)
+
 ## Why this needs Switch
 
 The theme is "turn your solo agent into a teammate." The difference shows up here as a number (see [Results](#results)): a solo agent can read every file, but it can't ask Dev whether the Terraform or the policy is wrong, and it can't get Rosa to own a disclosure. The work goes from plausible to true at the point where agents and the right people are in a room together. Switch is what puts them there:
@@ -60,7 +70,25 @@ Without Switch, clerk and auditor are two CLI processes that can't reach Dev or 
 
 ## Results
 
-⟨RESULTS⟩
+Every number below comes from `eval/score.py`, run on the files in this repo. You can re-run each one.
+
+**Harbor Bank (28 questions)**
+
+| | False statements to the bank | Answers you can't send | Guesses | Dead citations |
+|---|---|---|---|---|
+| Last year's answers, pasted ([`eval/baselines/copy-last-year.csv`](eval/baselines/copy-last-year.csv)) | **8** of 10 | 0 | 1 | 0 |
+| A solo Claude Code agent, same files ([`out/baseline/`](out/baseline/)) | 0 | **22** of 28 | 1 | 0 |
+| **Receipts**: clerk + auditor + the owners, in Switch ([`out/harbor-bank/`](out/harbor-bank/)) | **0** | **0** | **0** | **0** |
+
+What it took, from the ledger (`./receipts show harbor-bank --history`):
+
+- **19** questions routed to their owners (9 to Dev, 8 to Rosa, plus follow-ups). **18** final answers rest on a named person's confirmation in a room.
+- The auditor sent **11** answers back, each for a concrete reason: a public subnet with no AZ, a pentest finding marked Open, a draft that said "or is likely to disrupt" when Rosa hadn't said that, and Rosa's own statement that a contractor had no prod access, which the Okta export contradicted. Rosa's reply: "I was wrong."
+- **5 files in `company/` were changed**, each one only after its owner said yes in the room: backups back to 35 days (`rds.tf`), the exports bucket on the KMS key (`s3.tf`), the IR plan matched to the bank MSA, Anthropic added to the subprocessor list, and the BR-02 fix recorded. The full diff is [`out/harbor-bank/company-changes.diff`](out/harbor-bank/company-changes.diff).
+- 4 answers went out as honest exceptions with dates (contractor MFA, audit-log retention, dependency scanning, the overdue policy review).
+- Something nobody asked: for eight months, every customer told "35 days of backups" was getting 7. The clerk raised it with Rosa as her call.
+
+The judge is checked as well. It flags 8 of the pasted answers as false, and once the systems drifted (below) it flags the stale Harbor export too.
 
 ## How the truth is checked (the outside judge)
 
@@ -93,10 +121,15 @@ A security questionnaire is that problem with a contract attached. Last year's a
 
 - `./receipts remember <deal>` saves every final answer **with its receipts**: for a file, the cited lines and their hash; for a person, who said it, in which room, and when.
 - `./receipts recall "<question>"` re-checks every receipt against the files *as they are now* before the clerk can reuse anything. **FRESH**: the evidence is unchanged, or only moved, so reuse it. **STALE**: the evidence changed, so re-derive the answer and say what changed. **EXPIRED**: a person said it over 180 days ago, so ask again. **LEAD**: last year's unreceipted answers, never evidence.
-- `./receipts memcheck` re-checks the whole memory. It costs a file read and a hash per receipt, under a millisecond for the whole store. Checking every memory is cheap once each memory carries its receipt, and model and people time goes only to memories that went stale.
+- `./receipts memcheck` re-checks the whole memory. It costs a file read and a hash per receipt: 135 receipts in 7.4 ms. Checking every memory is cheap once each memory carries its receipt, and model and people time goes only to memories that went stale.
 - Memory is shared across providers. clerk (Claude Code) writes it and auditor (Codex) reads the same file, so neither depends on a vendor-specific memory feature. Writes are append-only under an exclusive lock: [`eval/memory_stress.py`](eval/memory_stress.py) runs 3 concurrent writers with 57 facts. Naive read-modify-write kept **19–24 of 57**; Receipts kept **57 of 57** in every trial.
 
-⟨MEMORY-RESULTS⟩
+**The live test.** Minutes after Maya signed off on Harbor Bank, [`scripts/drift.sh`](scripts/drift.sh) changed Ledgerline the way real weeks do. A new cost review cut backups to 14 days (a regression), and contractors were moved onto MFA (an improvement). Nobody told the agents.
+
+- `memcheck` went from 28/28 fresh to **3 stale** (HB-03, HB-11, HB-24), exactly the three answers whose evidence changed. On the first try, my drift script also reformatted the whole Okta file, and HB-02/HB-04 went stale with it. Hash receipts are conservative: they'd rather re-check a reformatted line than trust a changed one.
+- **The clerk caught it on its own, still in the deal room:** "Please hold the send. Two of the answers in the 09:55 export are no longer true." It also refused an Okta export with a date five days in the future, which was a bug in my drift script. The outside judge agrees: re-scored against the drifted files, the 09:55 export has 1 false attestation (HB-11 says 35 days). After Dev confirmed the change, the clerk re-exported at 10:17, and the corrected export scores 0 against the drifted systems. The timeline is in [`out/harbor-bank/STALE-EXPORT.md`](out/harbor-bank/STALE-EXPORT.md).
+- **The next questionnaire** (Clearwater Credit Union, 12 questions, in different words): **9** answers reused from FRESH memory with their receipts re-checked, **2** STALE memories re-derived from the systems rather than repeated (backups now 14 days, contractor MFA now on), and **1** question for a person (credit unions aren't banks). That's **1 human ping instead of 17**, and `eval/score.py` gives it 0 false statements and 0 unsendable answers.
+- Memory size: 40 memories, 135 receipts, re-checked in 7.4 ms.
 
 ## Run it yourself
 
@@ -145,6 +178,7 @@ Then the Switch workflow:
 
 - **Real:** Switch Console 0.40.1 with a local Switch server and the bundled Mattermost; clerk is a live Claude Code session and auditor a live Codex session, both run by Switch. Nothing they say in the demo is scripted. The ledger, the export gate, the Terraform fix and the score are all real.
 - **Staged:** Ledgerline and Harbor Bank are fictional. Maya, Dev and Rosa are played by [`demo/actors.py`](demo/actors.py) so the run can be reproduced without three coworkers. Each one replies only to what an agent actually asked them, by question ID, with what that person knows. The script never tells an agent what to find.
+- **Typed by hand during the recorded run.** The agents asked things the script didn't anticipate: the date of the overdue policy review, proof for three of Dev's answers, and four follow-ups for Rosa. I answered those as Dev and Rosa, from the same persona facts, and then added the lines to `actors.py`. Maya nudged the clerk twice by hand ("wrap it up" once the board was done, and "is the corrected export ready?"), because agents only act when they're addressed; `actors.py` now does the first one itself. I also posted one message as the security lead: the auditor was contesting every answer that rested on a person's word (insurance, background checks, an access review in another system), so I told it in the room that a named owner's confirmation is the receipt for facts that live outside the repo. That rule is now in [`switch/instructions/auditor.md`](switch/instructions/auditor.md). Finding a gap like this in your own process is what the auditor is for. The first gap it found was in mine.
 
 ## Repo layout
 
@@ -155,9 +189,13 @@ switch/                 the Switch template and the two agents' instructions
 tools/receipts.py       the shared ledger CLI (./receipts)
 eval/score.py           the outside judge, plus the solo-agent prompt
 demo/actors.py          the three scripted people
-out/                    ledgers, exports, scores
+out/                    ledgers, exports, scores, memory snapshots, the company/ diffs
+docs/                   screenshots from the recorded run
 ```
 
 ## What I'd do next
 
-⟨NEXT⟩
+- **Receipts that point outside the repo.** Today a person's word is the receipt for facts in Jira, the HR system or a contract. The next step is a connector per system (Okta API, AWS Config, the contract store), so those receipts get re-checked as well.
+- **Continuous drift alerts.** `memcheck` is cheap enough to run on every merge to `main`. A failing receipt would open a thread in the owner's room before the next questionnaire arrives, not after.
+- **First-class "ask a person" in Switch.** Receipts builds asks out of mentions, IDs and a ledger. A Switch primitive for a structured question to a named user, with a due time the room can see, would remove most of the actor glue.
+- **A bigger, adversarial benchmark.** The seven seeded drifts are mine. A fair test needs drifts written by someone else, on a real-sized estate.

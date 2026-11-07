@@ -1,14 +1,12 @@
 {
-  "file": "eval/baselines/copy-last-year.csv",
+  "file": "/Users/mitz/projects/hackathon/receipts/eval/baselines/copy-last-year.csv",
   "answers": 10,
-  "false_attestations": 8,
+  "false_attestations": 6,
   "dead_citations": 0,
   "guesses": 1,
   "not_sendable": 0,
   "detail": {
     "false": [
-      "HB-03",
-      "HB-06",
       "HB-11",
       "HB-13",
       "HB-15",

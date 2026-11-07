@@ -1,0 +1,13 @@
+{
+  "file": "out/clearwater-cu/clearwater-cu-answers.csv",
+  "answers": 12,
+  "false_attestations": 0,
+  "dead_citations": 0,
+  "guesses": 0,
+  "not_sendable": 0,
+  "detail": {
+    "false": [],
+    "guesses": [],
+    "not_sendable": []
+  }
+}

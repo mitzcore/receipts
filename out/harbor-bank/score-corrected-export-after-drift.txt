@@ -1,0 +1,6 @@
+scored out/harbor-bank/harbor-bank-answers.csv: 28 answers, 8 seeded facts in scope
+
+false attestations: 0
+dead citations:     0
+guesses:            0
+not sendable:       0

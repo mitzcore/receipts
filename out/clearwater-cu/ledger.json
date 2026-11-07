@@ -1,0 +1,396 @@
+{
+  "deal": "clearwater-cu",
+  "customer": "Clearwater Credit Union",
+  "source": "inbox/clearwater-cu-security-review.csv",
+  "started": "2026-11-07T09:59:39-05:00",
+  "questions": [
+    {
+      "id": "CW-01",
+      "section": "Identity",
+      "question": "Is MFA required for every person with access to systems that hold member data, including third-party contractors?",
+      "status": "verified",
+      "answer": "Yes. Every workforce account, employees and contractors alike, signs in through Okta with MFA enforced (Okta Verify push or WebAuthn). This includes the six third-party contractor accounts, which have read-only access to production AWS and access to GitHub. Contractor accounts were moved onto the MFA policy on 2026-11-07; before that date they signed in with a password only, under a temporary onboarding rule.",
+      "evidence": [
+        "company/idp/okta-policies.json:17-23",
+        "company/idp/okta-policies.json:5-12",
+        "human:@dev in ~infra at 2026-11-07T10:00",
+        "human:@dev in ~infra at 2026-11-07T09:32"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T10:03:07-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "STALE memory HB-03: contractor password-only rule removed, Contractors added to Workforce MFA (okta-policies.json:17-23). Dev confirmed at 10:00 that MFA is now enforced for every workforce account. Okta export is stamped exported_at 2026-11-12 (line 2), five days after today; the answer rests on Dev's word, not the export date. History (password-only until today) disclosed per Dev 09:32."
+        },
+        {
+          "at": "2026-11-07T10:04:04-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked cited receipts against current company/ sources and searched for contradicting configuration; owner confirmations match the claim."
+        }
+      ]
+    },
+    {
+      "id": "CW-02",
+      "section": "Data protection",
+      "question": "Describe encryption at rest for member data, including key ownership.",
+      "status": "verified",
+      "answer": "Member data at rest is encrypted with AES-256. The production PostgreSQL database (Amazon RDS) and the S3 buckets holding statement files and reconciliation exports are encrypted with a single AWS KMS customer-managed key (alias/ledgerline-data). Ledgerline owns and manages this key in its own AWS account; the key material is held in AWS KMS, rotates automatically every year, and is not supplied or held by customers. The same key protects all customers' data. Reconciliation export files created before 2026-11-07 remain encrypted with AES-256 under S3-managed keys until they expire, no later than 2026-12-07.",
+      "evidence": [
+        "company/infra/terraform/rds.tf:7-8",
+        "company/infra/terraform/s3.tf:6-13",
+        "company/infra/terraform/s3.tf:30-38",
+        "company/infra/terraform/s3.tf:53",
+        "company/infra/terraform/kms.tf:1-10",
+        "human:@dev in ~infra at 2026-11-07T09:35"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T10:03:07-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "FRESH memory HB-06, re-checked; key-ownership sentences added. Only one aws_kms_key exists in the Terraform (kms.tf:1)."
+        },
+        {
+          "at": "2026-11-07T10:04:04-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked cited receipts against current company/ sources and searched for contradicting configuration; owner confirmations match the claim."
+        }
+      ]
+    },
+    {
+      "id": "CW-03",
+      "section": "Continuity",
+      "question": "How long are database backups kept?",
+      "status": "verified",
+      "answer": "Production database backups (Amazon RDS automated snapshots, taken nightly, with point-in-time recovery across the retention window) are currently kept for 14 days. Retention was 7 days from March 2026 until 2026-11-07, so the full 14-day history is available from 2026-11-14. Our backup policy sets 35 days, and we plan to restore 35-day retention at our December 2026 review.",
+      "evidence": [
+        "company/infra/terraform/rds.tf:14-17",
+        "company/policies/backup-and-recovery.md:7",
+        "human:@dev in ~infra at 2026-11-07T09:35",
+        "human:@dev in ~infra at 2026-11-07T10:00"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T10:03:07-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "STALE memory HB-11 (35 days). rds.tf:17 now 14 (PLAT-511, 2026-11 cost review). Policy backup-and-recovery.md:7 still says 35: system wins, gap disclosed. Dev at 10:00: disclose 14, back to 35 at December review, don't revert."
+        },
+        {
+          "at": "2026-11-07T10:04:04-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked cited receipts against current company/ sources and searched for contradicting configuration; owner confirmations match the claim."
+        },
+        {
+          "at": "2026-11-07T10:04:06-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Cross-check from Harbor HB-11: in AWS, retention was 7 days from 2026-03 (PLAT-412, Dev 09:35 in ~infra), not 35. 35 was set in the repo at 09:35 today and replaced by 14 at 09:56. So 'reduced from 35 to 14' hides the 7-day period, and the full 14-day history only exists from 2026-11-14. HB-11 says: 'Retention was 7 days from March 2026 until 2026-11-07, so the full 14-day history is available from 2026-11-14.' Suggest aligning CW-03 before audit."
+        },
+        {
+          "at": "2026-11-07T10:04:15-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Confirmed current Terraform backup_retention_period = 14 and nightly snapshots/PITR; Dev confirms the December plan. The policy says 35 but is stale and does not describe the configured retention."
+        },
+        {
+          "at": "2026-11-07T10:04:17-05:00",
+          "by": "clerk",
+          "from": "verified",
+          "to": "drafted",
+          "note": "Re-drafted to match Harbor HB-11. The prior text said 'reduced from 35 to 14 in November', but AWS ran 7 days from 2026-03 (PLAT-412, Dev 09:35). 35 only existed in the repo for about 20 minutes today. Same receipts as HB-11."
+        },
+        {
+          "at": "2026-11-07T10:04:49-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Current Terraform says backup_retention_period = 14 and configures nightly backups plus PITR. Dev owns backups and confirmed 7 days until 2026-11-07 and the December review plan to restore 35 days. Answer correctly states current 14-day retention and transition history; the 14-day window fills by 2026-11-14. Policy’s 35 days is accurately identified as policy target, not current configuration."
+        }
+      ]
+    },
+    {
+      "id": "CW-04",
+      "section": "Monitoring",
+      "question": "What is the retention period for security and audit logs?",
+      "status": "verified",
+      "answer": "AWS CloudTrail audit logs (all regions, with log file validation) are retained for 90 days in CloudWatch Logs and for 180 days in an S3 archive encrypted with our AWS KMS key. Application API logs are retained for 30 days. We are extending S3 retention of audit logs to 400 days by 2026-12-31.",
+      "evidence": [
+        "company/infra/terraform/logging.tf:1-14",
+        "company/infra/terraform/logging.tf:16-19",
+        "company/infra/terraform/logging.tf:25-33",
+        "company/infra/terraform/logging.tf:44",
+        "human:@dev in ~infra at 2026-11-07T09:32"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T10:03:08-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "FRESH memory HB-13. Policy information-security-policy.md:27 says 12 months; system says 180 days. Disclosed with Dev's 2026-12-31 date."
+        },
+        {
+          "at": "2026-11-07T10:04:04-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked cited receipts against current company/ sources and searched for contradicting configuration; owner confirmations match the claim."
+        }
+      ]
+    },
+    {
+      "id": "CW-05",
+      "section": "Testing",
+      "question": "Provide the date of your last third-party penetration test.",
+      "status": "verified",
+      "answer": "Our most recent third-party penetration test was performed by Bramble Security (CREST-accredited) from 2025-04-07 to 2025-04-18, covering the public API, web app, admin console and AWS configuration. No penetration test has been performed since. Our next test with Bramble Security is booked for 2026-12-01.",
+      "evidence": [
+        "company/evidence/pentest-2025-04-summary.md:3-4",
+        "company/evidence/pentest-2025-04-summary.md:9",
+        "human:@dev in ~infra at 2026-11-07T09:32"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T10:03:08-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "FRESH memory HB-16. Annual test required by information-security-policy.md:32 is overdue (19 months); disclosed."
+        },
+        {
+          "at": "2026-11-07T10:04:04-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked cited receipts against current company/ sources and searched for contradicting configuration; owner confirmations match the claim."
+        }
+      ]
+    },
+    {
+      "id": "CW-06",
+      "section": "Vendors",
+      "question": "Please list your subprocessors.",
+      "status": "verified",
+      "answer": "Amazon Web Services (hosting and storage, US, us-east-1); Sentry (error monitoring, PII scrubbed, US); Postmark (transactional email, US); Anthropic (LLM API that drafts exception memos for unmatched transactions). Anthropic was added in our August 2026 release without first completing our vendor security review. The DPA with Anthropic is not yet signed; it is due to be signed by 2026-11-21.",
+      "evidence": [
+        "company/policies/vendor-management.md:12-15",
+        "company/services/recon/memo.py:9-11",
+        "company/services/recon/memo.py:21-27",
+        "human:@rosa in ~legal at 2026-11-07T09:32",
+        "human:@rosa in ~legal at 2026-11-07T09:38"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T10:03:08-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "FRESH memory HB-21, reused verbatim."
+        },
+        {
+          "at": "2026-11-07T10:04:04-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked cited receipts against current company/ sources and searched for contradicting configuration; owner confirmations match the claim."
+        }
+      ]
+    },
+    {
+      "id": "CW-07",
+      "section": "AI",
+      "question": "Is member data shared with any AI model provider?",
+      "status": "verified",
+      "answer": "Yes. Since our August 2026 release, the reconciliation service uses Anthropic's API (Claude Sonnet 4.5) to draft short exception memos for statement lines that cannot be matched to a ledger entry. For each unmatched line we send the counterparty name, amount, value date and remittance text as they appear on the statement, together with the nearest candidate ledger entries. Under our order form with Anthropic, these inputs are deleted within 30 days and are not used to train models. This use did not go through our vendor security review before launch. The DPA with Anthropic is not yet signed; it is due to be signed by 2026-11-21.",
+      "evidence": [
+        "company/services/recon/memo.py:1-5",
+        "company/services/recon/memo.py:13-27",
+        "company/policies/vendor-management.md:15",
+        "human:@rosa in ~legal at 2026-11-07T09:32",
+        "human:@rosa in ~legal at 2026-11-07T09:38"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T10:03:08-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "FRESH memory HB-22, reused verbatim. memo.py is the only AI SDK use in company/."
+        },
+        {
+          "at": "2026-11-07T10:04:04-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked cited receipts against current company/ sources and searched for contradicting configuration; owner confirmations match the claim."
+        }
+      ]
+    },
+    {
+      "id": "CW-08",
+      "section": "People",
+      "question": "Is security awareness training mandatory and annual?",
+      "status": "verified",
+      "answer": "Yes. Security awareness training (KnowBe4) is mandatory and annual for all employees and contractors. Completion for the 2026 cycle was 100% at the October 2026 deadline.",
+      "evidence": [
+        "human:@rosa in ~legal at 2026-11-07T09:32"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T10:03:08-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "FRESH memory HB-25, reused verbatim."
+        },
+        {
+          "at": "2026-11-07T10:04:04-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked cited receipts against current company/ sources and searched for contradicting configuration; owner confirmations match the claim."
+        }
+      ]
+    },
+    {
+      "id": "CW-09",
+      "section": "People",
+      "question": "Do you background-check staff with access to member data?",
+      "status": "verified",
+      "answer": "Yes. Every employee with access to member data is background-checked by Checkr at hire. Contractors are background-checked by the agencies that engage them, as our contracts with those agencies require. Contractors have read-only access to our production AWS environment; this includes one contractor based in Portugal, who was background-checked by her agency.",
+      "evidence": [
+        "human:@rosa in ~legal at 2026-11-07T09:32",
+        "company/idp/okta-policies.json:10",
+        "human:@rosa in ~legal at 2026-11-07T09:43"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T10:03:08-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "FRESH memory HB-26; 'customer data' changed to 'member data', otherwise verbatim. okta-policies.json:10 unchanged."
+        },
+        {
+          "at": "2026-11-07T10:04:04-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked cited receipts against current company/ sources and searched for contradicting configuration; owner confirmations match the claim."
+        }
+      ]
+    },
+    {
+      "id": "CW-10",
+      "section": "Insurance",
+      "question": "What is your cyber insurance coverage limit?",
+      "status": "verified",
+      "answer": "Yes. We carry cyber liability insurance with Coalition, with a $5,000,000 aggregate limit. The policy renews on 2027-03-01.",
+      "evidence": [
+        "human:@rosa in ~legal at 2026-11-07T09:32"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T10:03:08-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "FRESH memory HB-27, reused verbatim."
+        },
+        {
+          "at": "2026-11-07T10:04:04-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked cited receipts against current company/ sources and searched for contradicting configuration; owner confirmations match the claim."
+        }
+      ]
+    },
+    {
+      "id": "CW-11",
+      "section": "Notification",
+      "question": "What is your contractual breach-notification window for credit union customers?",
+      "status": "verified",
+      "answer": "We notify credit union customers within 36 hours of confirming a security incident involving their data.",
+      "evidence": [
+        "human:@rosa in ~legal at 2026-11-07T10:03",
+        "company/policies/incident-response.md:8-10"
+      ],
+      "owner": "rosa",
+      "history": [
+        {
+          "at": "2026-11-07T10:03:08-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "needs_owner",
+          "note": "No memory. incident-response.md:6-7 says 72h for customers; :8-10 says 36h for bank customers (bank MSA). Neither names credit unions. Need Rosa: which window does Clearwater's contract commit us to, and does a service-disruption trigger apply?"
+        },
+        {
+          "at": "2026-11-07T10:04:26-05:00",
+          "by": "clerk",
+          "from": "needs_owner",
+          "to": "drafted",
+          "note": "Rosa 10:03: credit union contract uses the same MSA language as for banks, 36h from confirmation. IR plan :8-10 says 'bank customers'; Rosa confirms the CU contract matches. She did not confirm the 4h service-disruption clause for CUs, so the answer leaves it out. General 72h (:6-7) is overridden by the contract."
+        },
+        {
+          "at": "2026-11-07T10:05:04-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "owner-confirmed; Rosa confirms Clearwater contract uses the 36-hour MSA language; company/ has no contradiction"
+        }
+      ]
+    },
+    {
+      "id": "CW-12",
+      "section": "Access",
+      "question": "When did you last review production access rights?",
+      "status": "verified",
+      "answer": "Production access rights are reviewed quarterly in Okta. The most recent review was completed on 2026-10-06; the next is scheduled for January 2027.",
+      "evidence": [
+        "company/policies/access-control.md:13",
+        "human:@dev in ~infra at 2026-11-07T09:32"
+      ],
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-11-07T10:03:08-05:00",
+          "by": "clerk",
+          "from": "open",
+          "to": "drafted",
+          "note": "FRESH memory HB-05, reused (leading 'Yes.' dropped: question is not yes/no)."
+        },
+        {
+          "at": "2026-11-07T10:04:05-05:00",
+          "by": "auditor",
+          "from": "drafted",
+          "to": "verified",
+          "note": "Checked cited receipts against current company/ sources and searched for contradicting configuration; owner confirmations match the claim."
+        }
+      ]
+    }
+  ]
+}

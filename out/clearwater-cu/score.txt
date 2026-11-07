@@ -1,0 +1,6 @@
+scored out/clearwater-cu/clearwater-cu-answers.csv: 12 answers, 7 seeded facts in scope
+
+false attestations: 0
+dead citations:     0
+guesses:            0
+not sendable:       0
