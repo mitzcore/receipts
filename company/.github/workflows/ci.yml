@@ -1,0 +1,39 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - run: pytest -q
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx run ruff check .
+
+  # Snyk dependency scan removed 2026-06 when the license lapsed.
+  # TODO(platform): replace with Dependabot or osv-scanner. Tracked in PLAT-455.
+  # dependency-scan:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: snyk/actions/python@master
+  #       env: { SNYK_TOKEN: "${{ secrets.SNYK_TOKEN }}" }
+
+  deploy:
+    needs: [test, lint]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production   # requires approval from a second engineer
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/deploy.sh

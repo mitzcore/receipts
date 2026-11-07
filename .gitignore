@@ -1,0 +1,10 @@
+demo/.env
+.playwright-mcp/
+__pycache__/
+*.tmp
+.DS_Store
+out/*
+!out/baseline/
+!out/harbor-bank/
+out/baseline/solo-run.log
+out/baseline/solo-time.txt

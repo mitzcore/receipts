@@ -1,0 +1,80 @@
+# Receipts: a security-questionnaire desk for a team, as a Switch template.
+#
+# Two agents on two different providers, three linked rooms, and the people who
+# own the facts. Import it in Switch Console (Templates → Import) or pass it to
+# `run_template`. Build the importable file with scripts/build-template.py: it
+# inlines switch/instructions/*.md where the {{...}} markers are.
+version: 1
+
+params:
+  company:
+    type: string
+    description: Prefix for room names
+    default: ledgerline
+    pattern: "[a-z][a-z0-9-]*"
+  customer:
+    type: string
+    description: Slug of the customer whose questionnaire this is
+    default: harbor-bank
+    pattern: "[a-z][a-z0-9-]*"
+  repo_dir:
+    type: directory
+    description: Your clone of the Receipts repo. Both agents work in it.
+  infra_owner:
+    type: user
+    description: Owns facts about systems (Head of Platform)
+  legal_owner:
+    type: user
+    description: Owns facts about vendors, contracts, people
+  bridge:
+    type: bridge
+    description: Where the rooms are mirrored
+    default: [$first]
+
+agents:
+  - name: clerk
+    display_name: clerk
+    description: Drafts questionnaire answers from evidence and asks the people who own the rest
+    provider: claude
+    location: local
+    directory: "{repo_dir}"
+    addressing: anyone
+    instructions: "{{clerk.md}}"
+  - name: auditor
+    display_name: auditor
+    description: Checks every answer, from the clerk or from people, against the actual systems
+    provider: codex
+    location: local
+    directory: "{repo_dir}"
+    addressing: anyone
+    instructions: "{{auditor.md}}"
+
+group:
+  name: "{company} questionnaire desk"
+  description: Security questionnaires, answered with receipts
+
+rooms:
+  - name: "deal-{customer}"
+    description: The account exec brings the questionnaire; the clerk brings it back with receipts
+    bridge: "{bridge}"
+    agents: [clerk, auditor]
+    users: ["{$creator}"]
+    instructions: |
+      Questionnaires for {customer} come in here and go out from here. Nothing
+      leaves without a receipt for every answer and the account exec's sign-off.
+  - name: infra
+    description: Facts about systems. The clerk asks, the owner answers, the auditor checks
+    bridge: "{bridge}"
+    agents: [clerk, auditor]
+    users: ["{infra_owner}"]
+  - name: legal
+    description: Facts about vendors, contracts, people and insurance
+    bridge: "{bridge}"
+    agents: [clerk, auditor]
+    users: ["{legal_owner}"]
+
+links:
+  - from: "deal-{customer}"
+    to: infra
+  - from: "deal-{customer}"
+    to: legal

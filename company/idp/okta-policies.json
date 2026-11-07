@@ -1,0 +1,35 @@
+{
+  "exported_at": "2026-11-02T14:10:00Z",
+  "org": "ledgerline.okta.com",
+  "groups": [
+    {"id": "00g1emp", "name": "Employees", "members": 37},
+    {"id": "00g2eng", "name": "Engineering", "members": 19},
+    {"id": "00g3ctr", "name": "Contractors", "members": 6}
+  ],
+  "app_assignments": [
+    {"app": "AWS IAM Identity Center (prod, read-only)", "groups": ["Engineering", "Contractors"]},
+    {"app": "AWS IAM Identity Center (prod, admin)", "groups": ["Engineering"]},
+    {"app": "GitHub Enterprise", "groups": ["Engineering", "Contractors"]},
+    {"app": "Ledgerline Admin Console", "groups": ["Employees"]},
+    {"app": "Google Workspace", "groups": ["Employees", "Contractors"]}
+  ],
+  "sign_on_policies": [
+    {
+      "name": "Workforce MFA",
+      "priority": 1,
+      "status": "ACTIVE",
+      "conditions": {"people": {"groups": {"include": ["Employees"]}}},
+      "rule": {"factor_mode": "2FA", "factors": ["okta_verify_push", "webauthn"], "session_lifetime_minutes": 720}
+    },
+    {
+      "name": "Contractor onboarding (temporary)",
+      "priority": 2,
+      "status": "ACTIVE",
+      "created": "2026-04-18",
+      "description": "Password-only while contractors' Okta Verify enrollment is sorted out. Remove after enrollment.",
+      "conditions": {"people": {"groups": {"include": ["Contractors"]}}},
+      "rule": {"factor_mode": "1FA", "factors": ["password"], "session_lifetime_minutes": 1440}
+    }
+  ],
+  "password_policy": {"min_length": 14, "history": 10, "max_age_days": 0, "lockout_attempts": 10, "breached_password_check": true}
+}

@@ -1,0 +1,13 @@
+id,section,question
+CW-01,Identity,"Is MFA required for every person with access to systems that hold member data, including third-party contractors?"
+CW-02,Data protection,"Describe encryption at rest for member data, including key ownership."
+CW-03,Continuity,"How long are database backups kept?"
+CW-04,Monitoring,"What is the retention period for security and audit logs?"
+CW-05,Testing,"Provide the date of your last third-party penetration test."
+CW-06,Vendors,"Please list your subprocessors."
+CW-07,AI,"Is member data shared with any AI model provider?"
+CW-08,People,"Is security awareness training mandatory and annual?"
+CW-09,People,"Do you background-check staff with access to member data?"
+CW-10,Insurance,"What is your cyber insurance coverage limit?"
+CW-11,Notification,"What is your contractual breach-notification window for credit union customers?"
+CW-12,Access,"When did you last review production access rights?"

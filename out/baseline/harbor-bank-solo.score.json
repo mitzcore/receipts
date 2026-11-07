@@ -1,0 +1,38 @@
+{
+  "file": "out/baseline/harbor-bank-solo.csv",
+  "answers": 28,
+  "false_attestations": 0,
+  "dead_citations": 0,
+  "guesses": 1,
+  "not_sendable": 22,
+  "detail": {
+    "false": [],
+    "guesses": [
+      "HB-05"
+    ],
+    "not_sendable": [
+      "HB-01",
+      "HB-02",
+      "HB-03",
+      "HB-05",
+      "HB-06",
+      "HB-07",
+      "HB-10",
+      "HB-11",
+      "HB-13",
+      "HB-15",
+      "HB-16",
+      "HB-17",
+      "HB-18",
+      "HB-20",
+      "HB-21",
+      "HB-22",
+      "HB-23",
+      "HB-24",
+      "HB-25",
+      "HB-26",
+      "HB-27",
+      "HB-28"
+    ]
+  }
+}

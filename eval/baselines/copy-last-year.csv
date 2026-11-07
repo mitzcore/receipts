@@ -1,0 +1,11 @@
+id,answer,evidence
+HB-03,Yes. MFA is enforced for all workforce accounts through Okta (Okta Verify or WebAuthn).,company/knowledge/answers.jsonl
+HB-06,Yes. All customer data at rest (RDS and every S3 bucket) is encrypted with AES-256 using customer-managed AWS KMS keys.,company/knowledge/answers.jsonl
+HB-11,"Nightly automated backups with point-in-time recovery, retained for 35 days.",company/knowledge/answers.jsonl
+HB-13,Security audit logs are retained for 13 months in immutable storage.,company/knowledge/answers.jsonl
+HB-15,Yes. Snyk scans every pull request and runs a weekly scheduled scan.,company/knowledge/answers.jsonl
+HB-16,Annual third-party penetration test by Bramble Security. Most recent: April 2025. All high findings remediated.,company/knowledge/answers.jsonl
+HB-21,"Amazon Web Services (hosting), Sentry (error monitoring), Postmark (email).",company/knowledge/answers.jsonl
+HB-22,No. Ledgerline does not send customer data to generative AI or LLM services.,company/knowledge/answers.jsonl
+HB-25,Yes. All employees complete annual security awareness training via KnowBe4.,company/knowledge/answers.jsonl
+HB-20,Within 72 hours of confirming an incident that affects customer data.,company/knowledge/answers.jsonl

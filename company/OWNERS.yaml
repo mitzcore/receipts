@@ -1,0 +1,23 @@
+# Who owns which answers. Like CODEOWNERS, but for facts about the company.
+# The clerk routes a question here when the evidence in this repo can't prove
+# an answer, or when the evidence and an earlier answer disagree.
+owners:
+  dev:
+    name: Dev Okafor
+    title: Head of Platform
+    room: infra
+    topics: [identity, sso, mfa, passwords, access reviews, encryption, keys, network,
+             secrets, backups, recovery, logging, vulnerability management,
+             penetration testing, sdlc, environments, availability]
+  rosa:
+    name: Rosa Lindqvist
+    title: Legal & Privacy
+    room: legal
+    topics: [subprocessors, vendors, generative ai use, privacy, data location,
+             retention and deletion, contractual commitments, incident notification,
+             security training, background checks, insurance]
+  maya:
+    name: Maya Chen
+    title: Account Executive
+    room: deal-harbor-bank
+    topics: [deal context, deadlines, final sign-off before anything goes to the customer]

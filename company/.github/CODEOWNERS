@@ -1,0 +1,4 @@
+# Every change to main needs one approving review from a code owner.
+*                    @ledgerline/engineering
+/infra/              @ledgerline/platform
+/services/recon/     @ledgerline/recon

@@ -1,0 +1,24 @@
+{
+  "file": "eval/baselines/copy-last-year.csv",
+  "answers": 10,
+  "false_attestations": 8,
+  "dead_citations": 0,
+  "guesses": 1,
+  "not_sendable": 0,
+  "detail": {
+    "false": [
+      "HB-03",
+      "HB-06",
+      "HB-11",
+      "HB-13",
+      "HB-15",
+      "HB-16",
+      "HB-21",
+      "HB-22"
+    ],
+    "guesses": [
+      "HB-25"
+    ],
+    "not_sendable": []
+  }
+}
