@@ -1,0 +1,46 @@
+# The Receipts rooms, as provisioned on the demo server:
+#   scripts/switch-api.sh create-rooms switch/rooms.yaml
+# (POST /gateway/rooms/from-yaml). Leave `bridge:` out to use the server's
+# default messaging app, the bundled Mattermost. Add your own Mattermost
+# username to each room's users if you want to watch.
+group:
+  name: Receipts
+  description: Security questionnaires answered with evidence; unknowns routed to the people who own them.
+rooms:
+  - name: deal-harbor-bank
+    description: Harbor Bank deal room. Sales works the questionnaire with the clerk and auditor.
+    agents: [clerk, auditor]
+    users: [maya]
+    instructions: |
+      Questionnaires from Harbor Bank come in here and go out from here. Nothing leaves without a
+      receipt for every answer and Maya's sign-off. The ledger for this deal is out/harbor-bank
+      (deal slug: harbor-bank).
+  - name: deal-clearwater-cu
+    description: Clearwater Credit Union deal room.
+    agents: [clerk, auditor]
+    users: [maya]
+    instructions: |
+      Questionnaires from Clearwater Credit Union come in here and go out from here. Nothing leaves
+      without a receipt for every answer and Maya's sign-off. The ledger for this deal is
+      out/clearwater-cu (deal slug: clearwater-cu).
+  - name: infra
+    description: Facts about systems. The clerk asks, Dev answers, the auditor checks.
+    agents: [clerk, auditor]
+    users: [dev]
+    instructions: |
+      Facts about Ledgerline's systems. Dev owns them. The clerk asks here by question ID, the auditor
+      checks answers against Terraform, the Okta export, CI and code. Changes to company/ files only
+      after Dev approves the diff in this room.
+  - name: legal
+    description: Facts about vendors, contracts, people and insurance.
+    agents: [clerk, auditor]
+    users: [rosa]
+    instructions: |
+      Facts about vendors, subprocessors, contracts, incident-notification commitments, people and
+      insurance. Rosa owns them. The clerk asks here by question ID; the auditor checks answers
+      against the code and policies.
+links:
+  - {from: deal-harbor-bank, to: infra, label: asks}
+  - {from: deal-harbor-bank, to: legal, label: asks}
+  - {from: deal-clearwater-cu, to: infra, label: asks}
+  - {from: deal-clearwater-cu, to: legal, label: asks}

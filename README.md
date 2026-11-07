@@ -16,7 +16,9 @@ At most companies one person, usually in sales or security, fills it in by copyi
 
 Systems drift and documents don't. The backup retention got cut in a cost review. Someone added a "temporary" password-only sign-on rule for contractors. A new feature started sending transaction data to an LLM API that never went through vendor review. Each of these turns last year's true answer into this year's false statement to a bank.
 
-A solo AI agent makes this worse, not better. It fills in all 28 answers in a few minutes, with confident citations, from the same stale documents. ⟨BASELINE-SUMMARY⟩
+I expected a solo AI agent to make this worse, by repeating the stale answers faster and with confident citations. I measured it, and it doesn't. One Claude Code session with the same files ([`eval/solo_prompt.md`](eval/solo_prompt.md)) found all seven drifts and made **zero** false claims. Then it stopped, because the next step isn't reading. **22 of its 28 answers** say "we cannot confirm" or carry an `[Internal - Rosa: please confirm…]` note. Is the Terraform wrong, or the policy? Do we fix it before Monday or disclose it? Who signs the disclosure about the LLM vendor nobody reviewed? A solo agent can't answer those questions, because they belong to people. What it produced is a good gap report, and you can't send a gap report to a bank.
+
+Finding the gaps is reading. Closing them takes the people who own the facts.
 
 ## What Receipts does
 
@@ -39,7 +41,7 @@ Receipts turns the questionnaire into a team workflow that runs in Switch. There
 1. **Maya** (account exec) asks `@clerk` in `~deal-harbor-bank` to take Harbor Bank's questionnaire.
 2. **clerk** (Claude Code) drafts every answer from `company/`, Ledgerline's Terraform, IdP export, CI, code and policies. Every answer needs a receipt: a `path:line` that proves it. Systems beat documents, and last year's answers count as leads, not evidence. If nothing in the repo can prove an answer, the clerk doesn't guess. It looks up the owner in `OWNERS.yaml` and asks them in their room, by question ID.
 3. **auditor** (Codex, a different model from the clerk, so the two don't share blind spots) checks each draft and each answer a person gives. It opens every citation, then looks for the counter-example: every bucket rather than only the cited one, every sign-on policy, every SDK the code imports.
-4. When the auditor finds a contradiction, the clerk takes both sides to the owner: *you said 35 days, `rds.tf:18` says 7, which one is wrong?* There are only three ways out. The answer gets corrected. The system gets fixed: the clerk proposes the diff, and applies it only after the owner approves it in the room. Or the gap is disclosed with a remediation date. A deadline never turns into a "yes".
+4. When the auditor finds a contradiction, the clerk takes both sides to the owner: *you said 35 days, `rds.tf:17` says 7, which one is wrong?* There are only three ways out. The answer gets corrected. The system gets fixed: the clerk proposes the diff, and applies it only after the owner approves it in the room. Or the gap is disclosed with a remediation date. A deadline never turns into a "yes".
 5. When every answer is verified or disclosed, the clerk exports the questionnaire with a receipt column and a `RECEIPTS.md`, saves what people told it so the next questionnaire asks them less, and hands it to Maya for sign-off. Agents never send anything to a customer.
 
 ## Why this needs Switch
@@ -74,20 +76,34 @@ Without Switch, clerk and auditor are two CLI processes that can't reach Dev or 
 | "Annual pentest, all highs fixed" | `evidence/`: the only report is April 2025, with one high still open at the time |
 | "No generative AI on customer data" | `services/recon/memo.py`: sends statement lines to the Anthropic API, and Anthropic isn't on the subprocessor list |
 
-[`eval/score.py`](eval/score.py) scores any filled questionnaire (from Receipts, a solo agent, or a person) against these facts. It doesn't use an answer key. It re-derives each fact from the live files every time it runs. If Dev approves the Terraform fix and `rds.tf` now says 35, then "35 days" scores as true. The only way to a clean score is for the answer to match reality: change the answer, or change reality. It reports three numbers:
+[`eval/score.py`](eval/score.py) scores any filled questionnaire (from Receipts, a solo agent, or a person) against these facts. It doesn't use an answer key. It re-derives each fact from the live files every time it runs. If Dev approves the Terraform fix and `rds.tf` now says 35, then "35 days" scores as true. The only way to a clean score is for the answer to match reality: change the answer, or change reality. It reports four numbers:
 
 - **false attestations**: a seeded fact asserted falsely without disclosing the gap
 - **dead citations**: evidence pointers that don't resolve to a real file and line
 - **guesses**: questions only a person can answer (training, background checks, insurance, access reviews), answered with no person's receipt
+- **not sendable**: answers still carrying an internal note, a placeholder or "we cannot confirm"
 
-The agents are instructed never to open `eval/`.
+The agents are instructed never to open `eval/`. The judge is checked too: pasting last year's answers into this year's questionnaire ([`eval/baselines/copy-last-year.csv`](eval/baselines/copy-last-year.csv)) scores **8 false attestations**, so the judge does catch false claims.
+
+## Team memory that knows when it's wrong
+
+Anthropic's [components of agent memory](https://www.anthropic.com/research/components-of-agent-memory) (Nov 6, 2026) names the problems that matter here. Memory "can also drift and become irrelevant as the environment changes". Notes can be wrong from the start and still be "read, and trusted, by Claude in a later session". Several agents writing one shared table overwrote each other and kept 41 of 57 facts. It also asks whether continuously checking every memory is practical.
+
+A security questionnaire is that problem with a contract attached. Last year's answers *are* team memory, and they went false without anyone noticing. So Receipts' memory stores how each fact was known, not just the fact:
+
+- `./receipts remember <deal>` saves every final answer **with its receipts**: for a file, the cited lines and their hash; for a person, who said it, in which room, and when.
+- `./receipts recall "<question>"` re-checks every receipt against the files *as they are now* before the clerk can reuse anything. **FRESH**: the evidence is unchanged, or only moved, so reuse it. **STALE**: the evidence changed, so re-derive the answer and say what changed. **EXPIRED**: a person said it over 180 days ago, so ask again. **LEAD**: last year's unreceipted answers, never evidence.
+- `./receipts memcheck` re-checks the whole memory. It costs a file read and a hash per receipt, under a millisecond for the whole store. Checking every memory is cheap once each memory carries its receipt, and model and people time goes only to memories that went stale.
+- Memory is shared across providers. clerk (Claude Code) writes it and auditor (Codex) reads the same file, so neither depends on a vendor-specific memory feature. Writes are append-only under an exclusive lock: [`eval/memory_stress.py`](eval/memory_stress.py) runs 3 concurrent writers with 57 facts. Naive read-modify-write kept **19–24 of 57**; Receipts kept **57 of 57** in every trial.
+
+⟨MEMORY-RESULTS⟩
 
 ## Run it yourself
 
 You need macOS (or Windows/Linux with the Console early-access builds), Docker, Node 20+, Python 3.10+, and Claude Code and Codex CLIs signed in.
 
 ```bash
-git clone ⟨REPO⟩ receipts && cd receipts
+git clone https://github.com/mitzcore/receipts && cd receipts
 
 # 1. The solo-agent baseline and its score (no Switch needed)
 claude -p "$(cat eval/solo_prompt.md)" --allowedTools "Read,Glob,Grep,Write" --permission-mode acceptEdits
@@ -96,7 +112,34 @@ python3 eval/score.py out/baseline/harbor-bank-solo.csv
 
 Then the Switch workflow:
 
-⟨SETUP⟩
+1. **Install Switch Console** ([releases](https://github.com/sandbox-quantum/switch/releases/latest)), open it, and choose **Get started → On this computer → Start**. It runs a local Switch server, and Mattermost in Docker beside it. On Apple silicon, turn on Docker Desktop's *Virtualization framework* and *Rosetta*: the Mattermost image is amd64-only and crashes under QEMU.
+2. **Create the people** in Mattermost. They play the owners. Use the System Console, or `mmctl` in the container:
+   ```bash
+   C=switchdash-local-mattermost-mattermost-1
+   for u in "maya Maya Chen" "dev Dev Okafor" "rosa Rosa Lindqvist"; do set -- $u
+     docker exec $C mmctl --local user create --username $1 --firstname $2 --lastname $3 --email $1@ledgerline.test --password 'pick-one'
+     docker exec $C mmctl --local team users add switch $1
+     docker exec $C mmctl --local token generate $1 receipts-demo   # → demo/.env
+   done
+   ```
+3. **Create the agents** in Console (**Your Agents → Add agent**): `clerk` on **Claude Code** and `auditor` on **Codex**. Set each one's working directory to this clone and *Who can talk* to **Anyone**. Then install their instructions:
+   ```bash
+   scripts/switch-api.sh agent-instructions clerk   switch/instructions/clerk.md
+   scripts/switch-api.sh agent-instructions auditor switch/instructions/auditor.md
+   ```
+   (`switch/receipts.template.yaml` describes the same two agents and the rooms as one Switch template.)
+4. **Create the rooms** (four Mattermost channels with their links, members and instructions):
+   ```bash
+   scripts/switch-api.sh create-rooms switch/rooms.yaml
+   ```
+5. **Run it.** `cp demo/env.example demo/.env`, then fill in the URL and the three tokens.
+   ```bash
+   scripts/run-demo.sh          # resets the fixture, plays Maya/Dev/Rosa, scores the export
+   scripts/drift.sh             # then: Ledgerline changes between questionnaires
+   DEMO=clearwater CH_DEAL=deal-clearwater-cu python3 demo/actors.py
+   python3 eval/score.py out/clearwater-cu/clearwater-cu-answers.csv
+   ```
+   Open Mattermost (the URL is in Console) to watch the rooms while it runs.
 
 ## What's real and what's staged
 

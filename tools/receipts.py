@@ -20,12 +20,16 @@ Stdlib only. Python 3.10+.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import datetime as dt
+import fcntl
+import hashlib
 import json
 import pathlib
 import re
 import sys
+import time
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "out"
@@ -37,6 +41,24 @@ ICON = {"open": "·", "drafted": "✎", "needs_owner": "?", "contested": "✗", 
 
 def now() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+MEMORY = COMPANY / "knowledge" / "memory.jsonl"
+LEGACY = COMPANY / "knowledge" / "answers.jsonl"
+HUMAN_TTL_DAYS = 180
+
+
+@contextlib.contextmanager
+def locked(path: pathlib.Path):
+    """Exclusive advisory lock. clerk and auditor run at the same time, on different
+    providers, and both write through this CLI: no read-modify-write may interleave."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(str(path) + ".lock", "w") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fh, fcntl.LOCK_UN)
 
 
 def ledger_path(deal: str) -> pathlib.Path:
@@ -109,6 +131,11 @@ def cmd_start(a):
 
 
 def cmd_set(a):
+    with locked(ledger_path(a.deal)):
+        _set(a)
+
+
+def _set(a):
     led = load(a.deal)
     q = find(led, a.qid)
     bad = [e for e in (check_pointer(p) for p in a.evidence) if e]
@@ -217,21 +244,137 @@ def cmd_export(a):
     print(f"wrote {csv_path.relative_to(ROOT)} and {(d / 'RECEIPTS.md').relative_to(ROOT)}")
 
 
+# ── Team memory with receipts ──────────────────────────────────────────────────
+# A memory is a claim plus HOW it was known. File receipts store the cited text
+# and its hash; person receipts store who said it, where, and when. Recall
+# re-checks every receipt against the world as it is now, so a memory whose
+# evidence changed can never be silently reused. Checking costs a file read and
+# a hash per receipt, not a model call: only stale memories need a model or a person.
+
+def _lines(ptr: str):
+    path, _, spec = ptr.partition(":")
+    f = ROOT / path
+    if not f.is_file():
+        return None, None
+    text = f.read_text(errors="replace").splitlines()
+    if not spec:
+        return "\n".join(text), f
+    m = re.fullmatch(r"(\d+)(?:-(\d+))?", spec)
+    lo, hi = int(m.group(1)), int(m.group(2) or m.group(1))
+    return "\n".join(l.strip() for l in text[lo - 1:hi]), f
+
+
+def _sha(t: str) -> str:
+    return hashlib.sha256(t.encode()).hexdigest()[:16]
+
+
+def receipt_for(ptr: str) -> dict:
+    if ptr.startswith("human:"):
+        return {"ptr": ptr}
+    cited, _ = _lines(ptr)
+    return {"ptr": ptr, "sha": _sha(cited or ""), "text": (cited or "")[:400]}
+
+
+def check_receipt(r: dict, today: dt.date) -> tuple[str, str]:
+    ptr = r["ptr"]
+    if ptr.startswith("human:"):
+        m = re.search(r"(\d{4}-\d{2}-\d{2})", ptr) or re.search(r"(\d{4}-\d{2}-\d{2})", r.get("as_of", ""))
+        when = dt.date.fromisoformat(m.group(1)) if m else None
+        if when and (today - when).days > HUMAN_TTL_DAYS:
+            return "expired", f"said {when}, older than {HUMAN_TTL_DAYS} days: ask the owner again"
+        return "fresh", "a person confirmed it" + (f" on {when}" if when else "")
+    cited, f = _lines(ptr)
+    if cited is None:
+        return "stale", f"{ptr.split(':')[0]} no longer exists"
+    if _sha(cited) == r["sha"]:
+        return "fresh", "evidence unchanged"
+    old = [l for l in r.get("text", "").splitlines() if l.strip()]
+    body = [l.strip() for l in f.read_text(errors="replace").splitlines()]
+    if old and all(l in body for l in old):
+        n = body.index(old[0]) + 1
+        return "fresh", f"evidence unchanged, moved to line {n}"
+    now = cited.splitlines()[0][:120] if cited else ""
+    return "stale", f"evidence changed. was: {r.get('text', '')[:120]!r} now: {now!r}"
+
+
 def cmd_remember(a):
-    """Save what people told us, so the next questionnaire doesn't have to ask them again."""
+    """Save every final answer with its receipts, so the next questionnaire can reuse what's still true."""
     led = load(a.deal)
-    lib = COMPANY / "knowledge" / "answers.jsonl"
     added = 0
-    with lib.open("a") as f:
-        for q in led["questions"]:
-            humans = [e for e in q["evidence"] if e.startswith("human:")]
-            if q["status"] in FINAL and humans:
-                f.write(json.dumps({"topic": q["section"].lower(), "question": q["question"], "answer": q["answer"],
-                                    "source": f"{led['customer']} questionnaire {q['id']}",
-                                    "as_of": dt.date.today().isoformat(),
-                                    "answered_by": q["owner"] or "", "receipts": q["evidence"]}, ensure_ascii=False) + "\n")
+    with locked(MEMORY):
+        with MEMORY.open("a") as f:
+            for q in led["questions"]:
+                if q["status"] not in FINAL or not q["evidence"]:
+                    continue
+                entry = {"id": f"{a.deal}/{q['id']}", "question": q["question"], "answer": q["answer"], "status": q["status"],
+                         "owner": q["owner"] or "", "as_of": dt.date.today().isoformat(), "source": led["customer"],
+                         "receipts": [receipt_for(p) for p in q["evidence"]]}
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
                 added += 1
-    print(f"remembered {added} human-confirmed answer(s) in {lib.relative_to(ROOT)}")
+    print(f"remembered {added} answers with receipts in {MEMORY.relative_to(ROOT)}")
+
+
+def _memories():
+    if not MEMORY.exists():
+        return []
+    latest = {}
+    for line in MEMORY.read_text().splitlines():
+        if line.strip():
+            e = json.loads(line)
+            latest[e["id"]] = e  # append-only; the newest entry for an id wins
+    return list(latest.values())
+
+
+WORD = re.compile(r"[a-z0-9]{3,}")
+STOP = set("the and are for you your with that this all any what how does have from our used will been when which least".split())
+
+
+def _score(query: str, text: str) -> float:
+    q = {w for w in WORD.findall(query.lower()) if w not in STOP}
+    t = {w for w in WORD.findall(text.lower()) if w not in STOP}
+    return len(q & t) / (len(q) or 1)
+
+
+def cmd_recall(a):
+    today = dt.date.today()
+    hits = sorted(((_score(a.query, e["question"] + " " + e["answer"]), e) for e in _memories()), key=lambda x: -x[0])
+    hits = [(s, e) for s, e in hits if s >= 0.25][: a.k]
+    if not hits:
+        print("no memory with receipts for this. Draft it from the systems, or ask the owner.")
+    for s, e in hits:
+        verdicts = [(r["ptr"], *check_receipt(r, today)) for r in e["receipts"]]
+        overall = "STALE" if any(v[1] == "stale" for v in verdicts) else "EXPIRED" if any(v[1] == "expired" for v in verdicts) else "FRESH"
+        print(f"[{overall}] {e['id']} ({e['as_of']}, {e['status']}) match {s:.0%}")
+        print(f"  Q: {e['question']}")
+        print(f"  A: {e['answer']}")
+        for ptr, v, why in verdicts:
+            print(f"  {'✓' if v == 'fresh' else '✗'} {ptr}: {why}")
+    leads = sorted(((_score(a.query, j["question"] + " " + j["answer"]), j) for j in map(json.loads, LEGACY.read_text().splitlines()) if True), key=lambda x: -x[0]) if LEGACY.exists() else []
+    for s, j in leads[:1]:
+        if s >= 0.25:
+            print(f"[LEAD, no receipts] last year ({j['as_of']}): {j['answer']}  ← not evidence; re-prove it")
+    print("rule: FRESH may be reused with its receipts (the auditor still checks). STALE or EXPIRED: re-derive or re-ask.")
+
+
+def cmd_memcheck(a):
+    t0 = time.perf_counter()
+    today = dt.date.today()
+    mems = _memories()
+    counts = {"fresh": 0, "stale": 0, "expired": 0}
+    stale = []
+    n_receipts = 0
+    for e in mems:
+        vs = [check_receipt(r, today)[0] for r in e["receipts"]]
+        n_receipts += len(vs)
+        k = "stale" if "stale" in vs else "expired" if "expired" in vs else "fresh"
+        counts[k] += 1
+        if k != "fresh":
+            stale.append(e["id"])
+    ms = (time.perf_counter() - t0) * 1000
+    print(f"{len(mems)} memories, {n_receipts} receipts checked in {ms:.1f} ms: "
+          f"{counts['fresh']} fresh, {counts['stale']} stale, {counts['expired']} expired")
+    for i in stale:
+        print(f"  ✗ {i}")
 
 
 def main():
@@ -246,6 +389,8 @@ def main():
     s = sub.add_parser("lint"); s.add_argument("deal"); s.set_defaults(fn=cmd_lint)
     s = sub.add_parser("export"); s.add_argument("deal"); s.add_argument("--draft", action="store_true"); s.set_defaults(fn=cmd_export)
     s = sub.add_parser("remember"); s.add_argument("deal"); s.set_defaults(fn=cmd_remember)
+    s = sub.add_parser("recall", help="what the team already knows about a question, with each receipt re-checked now"); s.add_argument("query"); s.add_argument("-k", type=int, default=3); s.set_defaults(fn=cmd_recall)
+    s = sub.add_parser("memcheck", help="re-check every receipt in team memory"); s.set_defaults(fn=cmd_memcheck)
     a = ap.parse_args()
     a.fn(a)
 

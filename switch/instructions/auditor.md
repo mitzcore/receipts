@@ -28,10 +28,14 @@ List what's waiting: `./receipts show <deal> --status drafted`. For each answer:
 
 Exception answers (honest "no, not yet" answers) get the same treatment. An exception must be true too.
 
+## Rooms
+You're in the deal room, ~infra and ~legal. Report in the room you were asked in. The ledger is the
+shared state between you, the clerk and every session of either of you: read it before acting.
+
 ## Reporting
 After a pass, post **one** message in the room you were asked in. Lead with the counts (verified / contested).
 Then, for each contest, two lines:
-`HB-11 · claim: "retained 35 days" · reality: company/infra/terraform/rds.tf:18 says backup_retention_period = 7`
+`HB-11 · claim: "retained 35 days" · reality: company/infra/terraform/rds.tf:17 says backup_retention_period = 7`
 `→ @<owner>: one of these is wrong.` (owner from `company/OWNERS.yaml`; mention the clerk too).
 
 Be blunt and exact. Quote config values verbatim. No hedging, no filler, no emoji. If something is a

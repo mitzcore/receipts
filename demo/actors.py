@@ -32,7 +32,8 @@ MM = os.environ.get("MM_URL", "http://localhost:8065").rstrip("/")
 TEAM = os.environ.get("MM_TEAM", "")
 DEAL, INFRA, LEGAL = (os.environ.get(k, d) for k, d in [("CH_DEAL", "deal-harbor-bank"), ("CH_INFRA", "infra"), ("CH_LEGAL", "legal")])
 PACE = float(os.environ.get("ACTOR_PACE", "6"))  # seconds a person "takes" to type a reply
-IDS = re.compile(r"\b(HB-\d\d)\b")
+IDS = re.compile(r"\b((?:HB|CW)-\d\d)\b")
+MODE = os.environ.get("DEMO", "harbor")  # harbor | clearwater (run 2, after scripts/drift.sh)
 
 # ── What each person knows ─────────────────────────────────────────────────────
 DEV_KNOWS = {
@@ -63,8 +64,22 @@ ROSA_KNOWS = {
 }
 ROSA_DECIDES = {"HB-21": ROSA_KNOWS["HB-22"], "HB-22": ROSA_KNOWS["HB-22"], "HB-20": ROSA_KNOWS["HB-20"]}
 
+# Clearwater (run 2) asks overlapping questions in different words.
+CW_SAME = {"CW-05": "HB-16", "CW-06": "HB-21", "CW-07": "HB-22", "CW-08": "HB-25", "CW-09": "HB-26",
+           "CW-10": "HB-27", "CW-11": "HB-20", "CW-12": "HB-05", "CW-02": "HB-06", "CW-04": "HB-13"}
+for cw, hb in CW_SAME.items():
+    for book in (DEV_KNOWS, ROSA_KNOWS, DEV_DECIDES, ROSA_DECIDES):
+        if hb in book:
+            book[cw] = book[hb]
+DEV_KNOWS["CW-01"] = DEV_DECIDES["CW-01"] = "yes, as of 2026-11-12. Contractors are on the Workforce MFA policy now and the temporary password-only rule is deleted."
+DEV_KNOWS["CW-03"] = DEV_DECIDES["CW-03"] = "finance cut it to 14 days in last week's cost review, I lost that one. Disclose 14 days. I'm taking it back to 35 at the December review."
+ROSA_KNOWS["CW-11"] = ROSA_DECIDES["CW-11"] = "same MSA language as for banks: 36 hours from confirmation."
+
 KICKOFF = ("@clerk Harbor Bank sent their vendor security questionnaire: `inbox/harbor-bank-vendor-security-questionnaire.csv`, "
            "28 questions. Procurement wants it back Monday or the pilot slips to Q1. Can you take it?")
+KICKOFF_CW = ("@clerk one more: Clearwater Credit Union sent a 12-question security review, "
+              "`inbox/clearwater-cu-security-review.csv`. Same drill, please.")
+SIGNOFF_CW = "Thanks. That was fast. Signing off and sending it to Clearwater."
 SIGNOFF = ("Read it, thanks. Signing off. I'd rather tell Harbor about the contractor MFA gap now than have their auditor "
            "find it in March. Sending it today.")
 
@@ -117,7 +132,7 @@ def main():
     answered = {"dev": set(), "rosa": set(), "dev_decided": set(), "rosa_decided": set()}
     approved_diffs, signed = set(), False
     t0 = int(time.time() * 1000)
-    maya.say(DEAL, KICKOFF)
+    maya.say(DEAL, KICKOFF if MODE == "harbor" else KICKOFF_CW)
     cursor = {DEAL: t0, INFRA: t0, LEGAL: t0}
     deadline = time.time() + float(os.environ.get("DEMO_TIMEOUT", "2400"))
     while time.time() < deadline and not signed:
@@ -130,7 +145,7 @@ def main():
                 msg, root = p["message"], p.get("root_id") or p["id"]
                 if key == "maya":
                     if re.search(r"sign[- ]?off|ready for (your|maya)|ready to send", msg, re.I) and re.search(r"RECEIPTS\.md|answers\.csv", msg):
-                        maya.say(DEAL, SIGNOFF, root)
+                        maya.say(DEAL, SIGNOFF if MODE == "harbor" else SIGNOFF_CW, root)
                         signed = True
                     continue
                 if f"@{person.me['username']}" not in msg:
